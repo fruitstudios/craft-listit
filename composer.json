@@ -1,0 +1,43 @@
+{
+    "name": "fruitstudios/subscribeit",
+    "description": "Follow, Favourite, Bookmark, Like & Subscribe.",
+    "type": "craft-plugin",
+    "version": "1.0.0",
+    "keywords": [
+        "craft",
+        "cms",
+        "craftcms",
+        "craft-plugin",
+        "subscribeit"
+    ],
+    "support": {
+        "docs": "https://github.com/fruitstudios/craft-subscribeit/blob/master/README.md",
+        "issues": "https://github.com/fruitstudios/craft-subscribeit/issues"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Fruit Studios",
+            "homepage": "https://fruitstudios.co.uk"
+        }
+    ],
+    "require": {
+        "craftcms/cms": "^3.0.0-RC1"
+    },
+    "autoload": {
+        "psr-4": {
+          "fruitstudios\\subscribeit\\": "src/"
+        }
+    },
+    "extra": {
+        "name": "subscribeit",
+        "handle": "subscribeit",
+        "hasCpSettings": false,
+        "hasCpSection": false,
+        "changelogUrl": "https://raw.githubusercontent.com/fruitstudios/craft-subscribeit/master/CHANGELOG.md",
+        "components": {
+            "subscribeitService": "fruitstudios\\subscribeit\\services\\SubscribeitService"
+        },
+        "class": "fruitstudios\\subscribeit\\Subscribeit"
+    }
+}
