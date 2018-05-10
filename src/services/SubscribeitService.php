@@ -25,6 +25,33 @@ class SubscribeitService extends Component
     // Public Methods
     // =========================================================================
 
+    public function saveRecipe(Recipe $recipe, $runValidation = true)
+    {
+        // Fire a 'beforeSaveRecipe' event
+        $this->trigger(self::EVENT_BEFORE_SAVE_RECIPE, new RecipeEvent([
+            'recipe' => $recipe,
+            'isNew' => $isNewRecipe,
+        ]));
+
+        if ($runValidation && !$recipe->validate()) {
+            \Craft::info('Recipe not saved due to validation error.', __METHOD__);
+            return false;
+        }
+
+        $isNewRecipe = !$recipe->id;
+
+        // ... Save the recipe here ...
+
+        // Fire an 'afterSaveRecipe' event
+        $this->trigger(self::EVENT_AFTER_SAVE_RECIPE, new RecipeEvent([
+            'recipe' => $recipe,
+            'isNew' => $isNewRecipe,
+        ]));
+
+        return true;
+    }
+
+
     /*
      * @return mixed
      */
