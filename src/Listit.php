@@ -30,7 +30,7 @@ class Listit extends Plugin
     // Public Properties
     // =========================================================================
 
-    public $schemaVersion = '1.0.0';
+    public $schemaVersion = '1.0.1';
 
     // Public Methods
     // =========================================================================
