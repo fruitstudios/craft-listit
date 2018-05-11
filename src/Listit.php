@@ -1,17 +1,8 @@
 <?php
-/**
- * subscribeit plugin for Craft CMS 3.x
- *
- * Follow, Favourite, Bookmark, Like & Subscribe.
- *
- * @link      https://fruitstudios.co.uk
- * @copyright Copyright (c) 2018 Fruit Studios
- */
+namespace fruitstudios\listit;
 
-namespace fruitstudios\subscribeit;
-
-use fruitstudios\subscribeit\services\SubscribeitService;
-use fruitstudios\subscribeit\variables\SubscribeitVariable;
+use fruitstudios\listit\services\ListitService;
+use fruitstudios\listit\variables\ListitVariable;
 
 use Craft;
 use craft\base\Plugin;
@@ -23,65 +14,49 @@ use craft\events\RegisterUrlRulesEvent;
 
 use yii\base\Event;
 
-/**
- * Class Subscribeit
- *
- * @author    Fruit Studios
- * @package   Subscribeit
- * @since     1.0.0
- *
- * @property  SubscribeitServiceService $subscribeitService
- */
-class Subscribeit extends Plugin
+class Listit extends Plugin
 {
     // Static Properties
     // =========================================================================
 
-    /**
-     * @var Subscribeit
-     */
     public static $plugin;
 
     // Public Properties
     // =========================================================================
 
-    /**
-     * @var string
-     */
     public $schemaVersion = '1.0.0';
 
     // Public Methods
     // =========================================================================
 
-    /**
-     * @inheritdoc
-     */
     public function init()
     {
         parent::init();
+
         self::$plugin = $this;
+
+        $this->setComponents([
+            'service' => ListitService::class,
+        ]);
 
         Event::on(
             CraftVariable::class,
             CraftVariable::EVENT_INIT,
             function (Event $event) {
                 $variable = $event->sender;
-                $variable->set('subscribeit', SubscribeitVariable::class);
+                $variable->set('listit', ListitVariable::class);
             }
         );
 
 
         Craft::info(
             Craft::t(
-                'subscribeit',
+                'listit',
                 '{name} plugin loaded',
                 ['name' => $this->name]
             ),
             __METHOD__
         );
     }
-
-    // Protected Methods
-    // =========================================================================
 
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * subscribeit plugin for Craft CMS 3.x
+ * listit plugin for Craft CMS 3.x
  *
  * Follow, Favourite, Bookmark, Like & Subscribe.
  *
@@ -8,9 +8,9 @@
  * @copyright Copyright (c) 2018 Fruit Studios
  */
 
-namespace fruitstudios\subscribeit\migrations;
+namespace fruitstudios\listit\migrations;
 
-use fruitstudios\subscribeit\Subscribeit;
+use fruitstudios\listit\Listit;
 
 use Craft;
 use craft\config\DbConfig;
@@ -18,7 +18,7 @@ use craft\db\Migration;
 
 /**
  * @author    Fruit Studios
- * @package   Subscribeit
+ * @package   Listit
  * @since     1.0.0
  */
 class Install extends Migration
@@ -26,36 +26,29 @@ class Install extends Migration
     // Public Properties
     // =========================================================================
 
-    /**
-     * @var string The database driver to use
-     */
     public $driver;
 
     // Public Methods
     // =========================================================================
 
-    /**
-     * @inheritdoc
-     */
     public function safeUp()
     {
         $this->driver = Craft::$app->getConfig()->getDb()->driver;
-        if ($this->createTables()) {
+
+        if ($this->createTables())
+        {
             $this->createIndexes();
             $this->addForeignKeys();
-            // Refresh the db schema caches
             Craft::$app->db->schema->refresh();
         }
 
         return true;
     }
 
-   /**
-     * @inheritdoc
-     */
     public function safeDown()
     {
         $this->driver = Craft::$app->getConfig()->getDb()->driver;
+
         $this->removeTables();
 
         return true;
@@ -64,18 +57,16 @@ class Install extends Migration
     // Protected Methods
     // =========================================================================
 
-    /**
-     * @return bool
-     */
     protected function createTables()
     {
         $tablesCreated = false;
 
-        $tableSchema = Craft::$app->db->schema->getTableSchema('{{%subscribeit_subscriptions}}');
-        if ($tableSchema === null) {
+        $tableSchema = Craft::$app->db->schema->getTableSchema('{{%listit_subscriptions}}');
+        if($tableSchema === null)
+        {
             $tablesCreated = true;
             $this->createTable(
-                '{{%subscribeit_subscriptions}}',
+                '{{%listit_subscriptions}}',
                 [
                     'id' => $this->primaryKey(),
                     'userId' => $this->integer()->notNull(),
@@ -92,21 +83,15 @@ class Install extends Migration
         return $tablesCreated;
     }
 
-    /**
-     * @return void
-     */
     protected function createIndexes()
     {
         $this->createIndex(
-            $this->db->getIndexName(
-                '{{%subscribeit_subscriptions}}',
-                'group',
-                true
-            ),
-            '{{%subscribeit_subscriptions}}',
+            $this->db->getIndexName('{{%listit_subscriptions}}', 'group', true),
+            '{{%listit_subscriptions}}',
             'group',
             true
         );
+
         // Additional commands depending on the db driver
         switch ($this->driver) {
             case DbConfig::DRIVER_MYSQL:
@@ -116,14 +101,11 @@ class Install extends Migration
         }
     }
 
-    /**
-     * @return void
-     */
     protected function addForeignKeys()
     {
         $this->addForeignKey(
-            $this->db->getForeignKeyName('{{%subscribeit_subscriptions}}', 'userId'),
-            '{{%subscribeit_subscriptions}}',
+            $this->db->getForeignKeyName('{{%listit_subscriptions}}', 'userId'),
+            '{{%listit_subscriptions}}',
             'userId',
             '{{%users}}',
             'id',
@@ -132,21 +114,28 @@ class Install extends Migration
         );
 
         $this->addForeignKey(
-            $this->db->getForeignKeyName('{{%subscribeit_subscriptions}}', 'elementId'),
-            '{{%subscribeit_subscriptions}}',
+            $this->db->getForeignKeyName('{{%listit_subscriptions}}', 'elementId'),
+            '{{%listit_subscriptions}}',
             'elementId',
             '{{%elements}}',
             'id',
             'CASCADE',
             'CASCADE'
         );
+
+        $this->addForeignKey(
+            $this->db->getForeignKeyName('{{%listit_subscriptions}}', 'siteId'),
+            '{{%listit_subscriptions}}',
+            'siteId',
+            '{{%sites}}',
+            'id',
+            'CASCADE',
+            'CASCADE'
+        );
     }
 
-    /**
-     * @return void
-     */
     protected function removeTables()
     {
-        $this->dropTableIfExists('{{%subscribeit_subscriptions}}');
+        $this->dropTableIfExists('{{%listit_subscriptions}}');
     }
 }

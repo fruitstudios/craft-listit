@@ -1,47 +1,33 @@
 <?php
-/**
- * subscribeit plugin for Craft CMS 3.x
- *
- * Follow, Favourite, Bookmark, Like & Subscribe.
- *
- * @link      https://fruitstudios.co.uk
- * @copyright Copyright (c) 2018 Fruit Studios
- */
+namespace fruitstudios\listit\models;
 
-namespace fruitstudios\subscribeit\models;
-
-use fruitstudios\subscribeit\Subscribeit;
+use fruitstudios\listit\Listit;
 
 use Craft;
 use craft\base\Model;
 
-/**
- * @author    Fruit Studios
- * @package   Subscribeit
- * @since     1.0.0
- */
 class Subscription extends Model
 {
     // Public Properties
     // =========================================================================
 
+    public $id;
     public $userId;
     public $elementId;
+    public $siteId;
     public $group = 'subscription';
+    public $dateCreated;
 
     // Public Methods
     // =========================================================================
 
-    /**
-     * @inheritdoc
-     */
     public function rules()
     {
         return [
-            [['userId', 'elementId'], 'integer'],
+            [['userId', 'elementId', 'siteId'], 'integer'],
             [['group'], 'string'],
-            ['group', 'default', 'value' => 'subscription'],
-            [['userId', 'elementId', 'group'], 'required'],
+            [['group'], 'default', 'value' => 'subscription'],
+            [['userId', 'elementId', 'siteId', 'group'], 'required'],
         ];
     }
 }

@@ -1,5 +1,5 @@
 {
-    "name": "fruitstudios/subscribeit",
+    "name": "fruitstudios/listit",
     "description": "Follow, Favourite, Bookmark, Like & Subscribe.",
     "type": "craft-plugin",
     "version": "1.0.0",
@@ -8,11 +8,16 @@
         "cms",
         "craftcms",
         "craft-plugin",
-        "subscribeit"
+        "listit",
+        "follow",
+        "favourite",
+        "bookmark",
+        "like",
+        "subscribe"
     ],
     "support": {
-        "docs": "https://github.com/fruitstudios/craft-subscribeit/blob/master/README.md",
-        "issues": "https://github.com/fruitstudios/craft-subscribeit/issues"
+        "docs": "https://github.com/fruitstudios/craft-listit/blob/master/README.md",
+        "issues": "https://github.com/fruitstudios/craft-listit/issues"
     },
     "license": "MIT",
     "authors": [
@@ -26,18 +31,18 @@
     },
     "autoload": {
         "psr-4": {
-          "fruitstudios\\subscribeit\\": "src/"
+          "fruitstudios\\listit\\": "src/"
         }
     },
     "extra": {
-        "name": "subscribeit",
-        "handle": "subscribeit",
+        "name": "Listit",
+        "handle": "listit",
         "hasCpSettings": false,
         "hasCpSection": false,
-        "changelogUrl": "https://raw.githubusercontent.com/fruitstudios/craft-subscribeit/master/CHANGELOG.md",
+        "changelogUrl": "https://raw.githubusercontent.com/fruitstudios/craft-listit/master/CHANGELOG.md",
         "components": {
-            "subscribeitService": "fruitstudios\\subscribeit\\services\\SubscribeitService"
+            "listitService": "fruitstudios\\listit\\services\\ListitService"
         },
-        "class": "fruitstudios\\subscribeit\\Subscribeit"
+        "class": "fruitstudios\\listit\\Listit"
     }
 }

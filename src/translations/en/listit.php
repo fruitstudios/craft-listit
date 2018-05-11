@@ -1,6 +1,6 @@
 <?php
 /**
- * subscribeit plugin for Craft CMS 3.x
+ * listit plugin for Craft CMS 3.x
  *
  * Follow, Favourite, Bookmark, Like & Subscribe.
  *
@@ -10,9 +10,9 @@
 
 /**
  * @author    Fruit Studios
- * @package   Subscribeit
+ * @package   Listit
  * @since     1.0.0
  */
 return [
-    'subscribeit plugin loaded' => 'subscribeit plugin loaded',
+    'listit plugin loaded' => 'listit plugin loaded',
 ];

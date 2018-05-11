@@ -1,6 +1,6 @@
-# subscribeit plugin for Craft CMS 3.x
+# Listit plugin for Craft CMS 3.x
 
-Follow, Favourite, Bookmark, Like & Subscribe.
+Follow, Favourite, Bookmark, Like & Subscribe users to lists.
 
 Docs coming soon...
 
