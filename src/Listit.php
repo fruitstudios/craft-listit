@@ -16,6 +16,12 @@ use yii\base\Event;
 
 class Listit extends Plugin
 {
+
+    // Constants
+    // =========================================================================
+
+    const DEFAULT_LIST_HANDLE = 'default';
+
     // Static Properties
     // =========================================================================
 

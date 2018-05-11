@@ -15,7 +15,7 @@ class Subscription extends Model
     public $userId;
     public $elementId;
     public $siteId;
-    public $group = 'subscription';
+    public $list = Listit::DEFAULT_LIST_HANDLE;
     public $dateCreated;
 
     // Public Methods
@@ -25,9 +25,9 @@ class Subscription extends Model
     {
         return [
             [['userId', 'elementId', 'siteId'], 'integer'],
-            [['group'], 'string'],
-            [['group'], 'default', 'value' => 'subscription'],
-            [['userId', 'elementId', 'siteId', 'group'], 'required'],
+            [['list'], 'string'],
+            [['list'], 'default', 'value' => Listit::DEFAULT_LIST_HANDLE],
+            [['userId', 'elementId', 'siteId', 'list'], 'required'],
         ];
     }
 }

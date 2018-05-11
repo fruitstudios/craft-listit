@@ -71,7 +71,7 @@ class Install extends Migration
                     'id' => $this->primaryKey(),
                     'userId' => $this->integer()->notNull(),
                     'elementId' => $this->integer()->notNull(),
-                    'group' => $this->string(64)->notNull()->defaultValue('subscription'),
+                    'list' => $this->string(64)->notNull()->defaultValue(''),
                     'siteId' => $this->integer()->notNull(),
                     'dateCreated' => $this->dateTime()->notNull(),
                     'dateUpdated' => $this->dateTime()->notNull(),
@@ -86,9 +86,9 @@ class Install extends Migration
     protected function createIndexes()
     {
         $this->createIndex(
-            $this->db->getIndexName('{{%listit_subscriptions}}', 'group', true),
+            $this->db->getIndexName('{{%listit_subscriptions}}', 'list', true),
             '{{%listit_subscriptions}}',
-            'group',
+            'list',
             true
         );
 

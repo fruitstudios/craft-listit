@@ -2,8 +2,8 @@
 namespace fruitstudios\listit\services;
 
 use fruitstudios\listit\Listit;
-use fruitstudios\listid\models\Subscription;
-use fruitstudios\listid\records\Subscription as SubscriptionRecord;
+use fruitstudios\listit\models\Subscription;
+use fruitstudios\listit\records\Subscription as SubscriptionRecord;
 
 use Craft;
 use craft\base\Component;
@@ -21,6 +21,26 @@ class ListitService extends Component
         return $this->_createSubscriptionFromRecord($subscriptionRecord);
     }
 
+    public function getSubscriptions(array $criteria = [], array $select = null)
+    {
+        if($select)
+        {
+            return (new Query())
+                ->select($select)
+                ->from([SubscriptionRecord::tableName()])
+                ->where($criteria)
+                ->all();
+        }
+        else
+        {
+            // TODO: Populate Models
+            // https://www.yiiframework.com/doc/guide/2.0/en/db-active-record#active-records-are-called-
+            // https://www.yiiframework.com/doc/guide/2.0/en/input-multiple-models
+            $subscriptionRecord = SubscriptionRecord::find($criteria);
+            return $subscriptionRecords;
+        }
+    }
+
     public function saveSubscription(Subscription $subscription)
     {
         if (!$subscription->validate()) {
@@ -31,11 +51,11 @@ class ListitService extends Component
         $subscriptionRecord = SubscriptionRecord::findOne([
             'userId' => $subscription->userId,
             'elementId' => $subscription->elementId,
-            'group' => $subscription->group,
+            'list' => $subscription->list,
             'siteId' => $subscription->siteId
         ]);
 
-        if($existingSubscription) {
+        if($subscriptionRecord) {
             $subscription = $this->_createSubscriptionFromRecord($subscriptionRecord);
             return true;
         }
@@ -43,19 +63,12 @@ class ListitService extends Component
         $subscriptionRecord = new SubscriptionRecord();
         $subscriptionRecord->setAttributes($subscription->getAttributes(), false);
 
-        // $subscriptionRecord->userId = $subscription->userId;
-        // $subscriptionRecord->elementId = $subscription->elementId;
-        // $subscriptionRecord->group = $subscription->group;
-        // $subscriptionRecord->siteId = $subscription->siteId;
-
         return $subscriptionRecord->save(false);
     }
 
     public function deleteSubscription($subscriptionId)
     {
-        $subscriptionRecord = SubscriptionRecord::findOne([
-            id => $subscriptionId
-        ]);
+        $subscriptionRecord = SubscriptionRecord::findOne($subscriptionId);
 
         if($subscriptionRecord) {
             try {
@@ -79,7 +92,7 @@ class ListitService extends Component
     /**
      * Creates a CategoryGroup with attributes from a CategoryGroupRecord.
      *
-     * @param CategoryGroupRecord|null $groupRecord
+     * @param CategoryGroupRecord|null $listRecord
      * @return CategoryGroup|null
      */
     private function _createSubscriptionFromRecord(SubscriptionRecord $subscriptionRecord = null)
@@ -93,7 +106,7 @@ class ListitService extends Component
             'userId',
             'elementId',
             'siteId',
-            'group',
+            'list',
             'dateCreated'
         ]));
 

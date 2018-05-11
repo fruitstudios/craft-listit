@@ -7,12 +7,7 @@ use fruitstudios\listit\models\Subscription;
 use Craft;
 use craft\web\Controller;
 
-/**
- * @author    Fruit Studios
- * @package   Listit
- * @since     1.0.0
- */
-class ListitController extends Controller
+class ListController extends Controller
 {
 
     // Protected Properties
@@ -26,10 +21,10 @@ class ListitController extends Controller
 
     public function actionIndex()
     {
-        return $this->actionSubscribe();
+        return $this->actionAdd();
     }
 
-    public function actionSubscribe(string $group = null)
+    public function actionAdd(string $list = null)
     {
         $this->requireLogin();
         $this->requirePostRequest();
@@ -41,7 +36,7 @@ class ListitController extends Controller
         $user = $userId ? Craft::$app->getUsers()->getUserById($userId) : Craft::$app->getUser()->getIdentity();
 
         // Group
-        $group = $group ?? $request->getParam('group', 'subscription');
+        $list = $list ?? $request->getParam('list', Listit::DEFAULT_LIST_HANDLE);
 
         // Site
         $siteId = $request->getParam('siteId', false);
@@ -55,7 +50,7 @@ class ListitController extends Controller
         $subscription = new Subscription();
         $subscription->userId = $user->id ?? null;
         $subscription->elementId = $element->id ?? null;
-        $subscription->group = $group;
+        $subscription->list = $list;
         $subscription->siteId = $site->id ?? null;
 
         // Save Subscription
@@ -83,7 +78,7 @@ class ListitController extends Controller
                     'id' => $subscription->id,
                     'userId' => $subscription->userId,
                     'elementId' => $subscription->elementId,
-                    'group' => $subscription->group,
+                    'list' => $subscription->list,
                     'siteId' => $subscription->siteId
                 ]
             ]);
@@ -92,7 +87,7 @@ class ListitController extends Controller
         return $this->redirectToPostedUrl($subscription);
     }
 
-    public function actionUnSubscribe(string $group = null)
+    public function actionRemove(string $list = null)
     {
         $this->requireLogin();
         $this->requirePostRequest();
@@ -104,7 +99,7 @@ class ListitController extends Controller
         $user = $userId ? Craft::$app->getUsers()->getUserById($userId) : Craft::$app->getUser()->getIdentity();
 
         // Group
-        $group = $group ?? $request->getParam('group', 'subscription');
+        $list = $list ?? $request->getParam('list', Listit::DEFAULT_LIST_HANDLE);
 
         // Site
         $siteId = $request->getParam('siteId', false);
@@ -118,7 +113,7 @@ class ListitController extends Controller
         $subscription = Listit::$plugin->service->getSubscription([
             'userId' => $user->id ?? null,
             'elementId' => $element->id ?? null,
-            'group' => $group,
+            'list' => $list,
             'siteId' => $site->id ?? null
         ]);
 
@@ -174,51 +169,51 @@ class ListitController extends Controller
 
     public function actionFavorite()
     {
-        return $this->actionSubscribe('favorite');
+        return $this->actionAdd('favorite');
     }
 
     public function actionUnFavorite()
     {
-        return $this->actionUnSubscribe('favorite');
+        return $this->actionRemove('favorite');
     }
 
     public function actionLike()
     {
-        return $this->actionSubscribe('like');
+        return $this->actionAdd('like');
     }
 
     public function actionUnLike()
     {
-        return $this->actionUnSubscribe('like');
+        return $this->actionRemove('like');
     }
 
     public function actionFollow()
     {
-        return $this->actionSubscribe('follow');
+        return $this->actionAdd('follow');
     }
 
     public function actionUnFollow()
     {
-        return $this->actionUnSubscribe('follow');
+        return $this->actionRemove('follow');
     }
 
     public function actionStar()
     {
-        return $this->actionSubscribe('star');
+        return $this->actionAdd('star');
     }
 
     public function actionUnStar()
     {
-        return $this->actionUnSubscribe('star');
+        return $this->actionRemove('star');
     }
 
     public function actionBookmark()
     {
-        return $this->actionSubscribe('bookmark');
+        return $this->actionAdd('bookmark');
     }
 
     public function actionUnBookmark()
     {
-        return $this->actionUnSubscribe('bookmark');
+        return $this->actionRemove('bookmark');
     }
 }
