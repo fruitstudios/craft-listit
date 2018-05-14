@@ -13,6 +13,6 @@ class Subscription extends ActiveRecord
 
     public static function tableName()
     {
-        return '{{%listit_subscriptions}}';
+        return '{{%listit}}';
     }
 }

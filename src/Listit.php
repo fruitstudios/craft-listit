@@ -22,6 +22,12 @@ class Listit extends Plugin
 
     const DEFAULT_LIST_HANDLE = 'default';
 
+    const FOLLOW_LIST_HANDLE = 'follow';
+    const STAR_LIST_HANDLE = 'star';
+    const BOOKMARK_LIST_HANDLE = 'bookmark';
+    const LIKE_LIST_HANDLE = 'like';
+    const FAVOURITE_LIST_HANDLE = 'favourite';
+
     // Static Properties
     // =========================================================================
 

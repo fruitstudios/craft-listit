@@ -61,12 +61,12 @@ class Install extends Migration
     {
         $tablesCreated = false;
 
-        $tableSchema = Craft::$app->db->schema->getTableSchema('{{%listit_subscriptions}}');
+        $tableSchema = Craft::$app->db->schema->getTableSchema('{{%listit}}');
         if($tableSchema === null)
         {
             $tablesCreated = true;
             $this->createTable(
-                '{{%listit_subscriptions}}',
+                '{{%listit}}',
                 [
                     'id' => $this->primaryKey(),
                     'userId' => $this->integer()->notNull(),
@@ -86,10 +86,10 @@ class Install extends Migration
     protected function createIndexes()
     {
         $this->createIndex(
-            $this->db->getIndexName('{{%listit_subscriptions}}', 'list', true),
-            '{{%listit_subscriptions}}',
+            $this->db->getIndexName('{{%listit}}', 'list', true),
+            '{{%listit}}',
             'list',
-            true
+            false
         );
 
         // Additional commands depending on the db driver
@@ -104,8 +104,8 @@ class Install extends Migration
     protected function addForeignKeys()
     {
         $this->addForeignKey(
-            $this->db->getForeignKeyName('{{%listit_subscriptions}}', 'userId'),
-            '{{%listit_subscriptions}}',
+            $this->db->getForeignKeyName('{{%listit}}', 'userId'),
+            '{{%listit}}',
             'userId',
             '{{%users}}',
             'id',
@@ -114,8 +114,8 @@ class Install extends Migration
         );
 
         $this->addForeignKey(
-            $this->db->getForeignKeyName('{{%listit_subscriptions}}', 'elementId'),
-            '{{%listit_subscriptions}}',
+            $this->db->getForeignKeyName('{{%listit}}', 'elementId'),
+            '{{%listit}}',
             'elementId',
             '{{%elements}}',
             'id',
@@ -124,8 +124,8 @@ class Install extends Migration
         );
 
         $this->addForeignKey(
-            $this->db->getForeignKeyName('{{%listit_subscriptions}}', 'siteId'),
-            '{{%listit_subscriptions}}',
+            $this->db->getForeignKeyName('{{%listit}}', 'siteId'),
+            '{{%listit}}',
             'siteId',
             '{{%sites}}',
             'id',
@@ -136,6 +136,6 @@ class Install extends Migration
 
     protected function removeTables()
     {
-        $this->dropTableIfExists('{{%listit_subscriptions}}');
+        $this->dropTableIfExists('{{%listit}}');
     }
 }

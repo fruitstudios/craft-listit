@@ -7,6 +7,7 @@ use fruitstudios\listit\records\Subscription as SubscriptionRecord;
 
 use Craft;
 use craft\base\Component;
+use craft\db\Query;
 
 use yii\db\StaleObjectException;
 
@@ -39,6 +40,15 @@ class ListitService extends Component
             $subscriptionRecord = SubscriptionRecord::find($criteria);
             return $subscriptionRecords;
         }
+    }
+
+    public function getSubscriptionsColumn(array $criteria = [], string $column)
+    {
+        return (new Query())
+            ->select($column)
+            ->from([SubscriptionRecord::tableName()])
+            ->where($criteria)
+            ->column();
     }
 
     public function saveSubscription(Subscription $subscription)
@@ -83,18 +93,11 @@ class ListitService extends Component
         }
 
         return true;
-
     }
 
     // Private Methods
     // =========================================================================
 
-    /**
-     * Creates a CategoryGroup with attributes from a CategoryGroupRecord.
-     *
-     * @param CategoryGroupRecord|null $listRecord
-     * @return CategoryGroup|null
-     */
     private function _createSubscriptionFromRecord(SubscriptionRecord $subscriptionRecord = null)
     {
         if (!$subscriptionRecord) {
