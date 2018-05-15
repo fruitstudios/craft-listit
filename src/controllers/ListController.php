@@ -42,7 +42,7 @@ class ListController extends Controller
         $user = $this->_getUser();
         $element = $this->_getElement();
         $list = $this->_getList();
-        $site = $this->_getsite();
+        $site = $this->_getSite();
 
         // Create Subscription
         $subscription = Listit::$plugin->subscriptions->createSubscription([
@@ -68,7 +68,7 @@ class ListController extends Controller
         $user = $this->_getUser();
         $element = $this->_getElement();
         $list = $this->_getList();
-        $site = $this->_getsite();
+        $site = $this->_getSite();
 
         // Get Subscription
         $subscription = Listit::$plugin->subscriptions->getSubscription([

@@ -25,15 +25,15 @@ class Subscriptions extends Component
 
     public function createSubscription($attributes = [])
     {
-        $subscription = new Subscription();
-        $subscription->setAttributes($attributes);
-        return $subscription;
+        // $subscription = new Subscription();
+        // $subscription->setAttributes($attributes);
+        return $this->_createSubscription($attributes);
     }
 
     public function getSubscription(array $criteria = null)
     {
         $subscriptionRecord = SubscriptionRecord::findOne($criteria);
-        return $this->_createSubscriptionFromRecord($subscriptionRecord);
+        return $this->_createSubscription($subscriptionRecord);
     }
 
     public function getSubscriptions(array $criteria = [], array $select = null)
@@ -48,14 +48,14 @@ class Subscriptions extends Component
         }
         else
         {
-            $subscriptionRecords = SubscriptionRecord::find($criteria);
+            $subscriptionRows = SubscriptionRecord::find($criteria);
 
             $subscriptionModels = [];
-            if($subscriptionModels)
+            if($subscriptionRows)
             {
-                foreach ($subscriptionRecords as $subscriptionRecord)
+                foreach ($subscriptionRows as $subscriptionRow)
                 {
-                    $subscriptionModels[] = $this->createSubscriptionFromRecord($subscriptionRecord);
+                    $subscriptionModels[] = $this->_createSubscription($subscriptionRow);
                 }
             }
             return $subscriptionModels;
@@ -86,7 +86,7 @@ class Subscriptions extends Component
         ]);
 
         if($subscriptionRecord) {
-            $subscription = $this->_createSubscriptionFromRecord($subscriptionRecord);
+            $subscription = $this->_createSubscription($subscriptionRecord);
             return true;
         }
 
@@ -97,7 +97,7 @@ class Subscriptions extends Component
             return false;
         }
 
-        $subscriptionModel = $this->_createSubscriptionFromRecord($subscriptionRecord);
+        $subscriptionModel = $this->_createSubscription($subscriptionRecord);
 
         $this->trigger(self::EVENT_ADDED_TO_LIST, new SubscriptionEvent([
             'subscription' => $subscriptionModel
@@ -113,7 +113,7 @@ class Subscriptions extends Component
         if($subscriptionRecord) {
             try {
 
-                $subscriptionModel = $this->_createSubscriptionFromRecord($subscriptionRecord);
+                $subscriptionModel = $this->_createSubscription($subscriptionRecord);
                 $subscriptionRecord->delete();
 
                 $this->trigger(self::EVENT_REMOVED_FROM_LIST, new SubscriptionEvent([
@@ -135,21 +135,25 @@ class Subscriptions extends Component
     // Private Methods
     // =========================================================================
 
-    private function _createSubscriptionFromRecord(SubscriptionRecord $subscriptionRecord = null)
+    private function _createSubscription($config = null)
     {
-        if (!$subscriptionRecord) {
+        if (!$config) {
             return null;
         }
 
-        $subscription = new Subscription($subscriptionRecord->toArray([
-            'id',
-            'userId',
-            'elementId',
-            'siteId',
-            'list',
-            'dateCreated'
-        ]));
+        if($config instanceof Subscription)
+        {
+            $config = $subscriptionRecord->toArray([
+                'id',
+                'userId',
+                'elementId',
+                'siteId',
+                'list',
+                'dateCreated'
+            ]);
+        }
 
+        $subscription = new Subscription($config);
         return $subscription;
     }
 

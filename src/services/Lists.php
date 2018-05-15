@@ -58,7 +58,7 @@ class Lists extends Component
         }
 
         $criteria = [
-            'elementId' => $element->id,
+            'userId' => $user->id,
             'siteId' => $site->id,
             'list' => $list
         ];
