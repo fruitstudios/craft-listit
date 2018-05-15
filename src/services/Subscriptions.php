@@ -48,14 +48,16 @@ class Subscriptions extends Component
         }
         else
         {
-            $subscriptionRows = SubscriptionRecord::find($criteria);
+            $subscriptionRecords = SubscriptionRecord::find()
+                ->where($criteria)
+                ->all();
 
             $subscriptionModels = [];
-            if($subscriptionRows)
+            if($subscriptionRecords)
             {
-                foreach ($subscriptionRows as $subscriptionRow)
+                foreach ($subscriptionRecords as $subscriptionRecord)
                 {
-                    $subscriptionModels[] = $this->_createSubscription($subscriptionRow);
+                    $subscriptionModels[] = $this->_createSubscription($subscriptionRecord);
                 }
             }
             return $subscriptionModels;
@@ -156,5 +158,7 @@ class Subscriptions extends Component
         $subscription = new Subscription($config);
         return $subscription;
     }
+
+
 
 }

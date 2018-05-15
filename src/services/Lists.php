@@ -7,8 +7,11 @@ use fruitstudios\listit\models\Subscription;
 use Craft;
 use craft\base\Component;
 use craft\base\Element;
+use craft\records\Element as ElementRecord;
+use craft\elements\db\ElementQueryInterface;
 use craft\elements\User;
 use craft\models\Site;
+use craft\helpers\ArrayHelper;
 use craft\db\Query;
 
 class Lists extends Component
@@ -115,13 +118,44 @@ class Lists extends Component
 
     public function getElements(string $list, $user = null, $site = null)
     {
-        $elementIds = $this->getElementIds($list, $user, $site);
+        // TODO: Is this over kill, is it even needed???
 
-        return User::find()
+        $elementIds = $this->getElementIds($list, $user, $site);
+        if(!$elementIds)
+        {
+            return [];
+        }
+
+        $elementsToReturn = $elementIds;
+
+        $elements = (new Query())
+            ->select(['id', 'type'])
+            ->from([ElementRecord::tableName()])
             ->where([
                 'id' => $elementIds
             ])
             ->all();
+
+        $elementIdsByType = [];
+        foreach ($elements as $element)
+        {
+            $elementIdsByType[$element['type']][] = $element['id'];
+        }
+
+        foreach ($elementIdsByType as $elementType => $ids)
+        {
+            $criteria = ['id' => $ids];
+            $elements = $this->_getElementQuery($elementType, $criteria)
+                ->all();
+
+            foreach ($elements as $element)
+            {
+                $key = array_search($element->id, $elementIds);
+                $elementsToReturn[$key] = $element;
+            }
+        }
+
+        return $elementsToReturn;
     }
 
     // Add / Remove
@@ -400,7 +434,7 @@ class Lists extends Component
         {
             return $element;
         }
-        return $element ? Craft::$app->getElements()->getUsgetElementByIderById((int) $element) : false;
+        return $element ? Craft::$app->getElements()->getElementById((int) $element) : false;
     }
 
     private function _determineSite($site = null)
@@ -412,5 +446,13 @@ class Lists extends Component
         }
 
         return $site ? Craft::$app->getSites()->getSiteById((int) $site) : false;
+    }
+
+    private function _getElementQuery($elementType, array $criteria): ElementQueryInterface
+    {
+        /** @var string|ElementInterface $elementType */
+        $query = $elementType::find();
+        Craft::configure($query, $criteria);
+        return $query;
     }
 }

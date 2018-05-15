@@ -23,6 +23,8 @@ class Subscription extends Model
     public $list;
     public $siteId;
     public $dateCreated;
+    public $dateUpdated;
+    public $uid;
 
     // Public Methods
     // =========================================================================
