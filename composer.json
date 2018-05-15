@@ -2,7 +2,7 @@
     "name": "fruitstudios/listit",
     "description": "Follow, Favourite, Bookmark, Like & Subscribe.",
     "type": "craft-plugin",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "keywords": [
         "craft",
         "cms",
@@ -41,7 +41,8 @@
         "hasCpSection": false,
         "changelogUrl": "https://raw.githubusercontent.com/fruitstudios/craft-listit/master/CHANGELOG.md",
         "components": {
-            "listitService": "fruitstudios\\listit\\services\\ListitService"
+            "listService": "fruitstudios\\listit\\services\\ListService",
+            "subscriptionService": "fruitstudios\\listit\\services\\SubscriptionService"
         },
         "class": "fruitstudios\\listit\\Listit"
     }

@@ -4,6 +4,8 @@ namespace fruitstudios\listit\controllers;
 use fruitstudios\listit\Listit;
 use fruitstudios\listit\models\Subscription;
 
+use fruitstudios\listit\services\Lists;
+
 use Craft;
 use craft\web\Controller;
 use craft\elements\User;
@@ -37,52 +39,25 @@ class ListController extends Controller
         $this->requireLogin();
         $this->requirePostRequest();
 
-        $request = Craft::$app->getRequest();
-
         $user = $this->_getUser();
         $element = $this->_getElement();
         $list = $this->_getList();
         $site = $this->_getsite();
 
-        // Subscription
-        $subscription = new Subscription();
-        $subscription->userId = $user->id ?? null;
-        $subscription->elementId = $element->id ?? null;
-        $subscription->list = $list;
-        $subscription->siteId = $site->id ?? null;
+        // Create Subscription
+        $subscription = Listit::$plugin->subscriptions->createSubscription([
+            'userId' => $user->id ?? null,
+            'elementId' => $element->id ?? null,
+            'list' => $list,
+            'siteId' => $site->id ?? null,
+        ]);
 
         // Save Subscription
-        if (!Listit::$plugin->service->saveSubscription($subscription))
+        if (!Listit::$plugin->subscriptions->saveSubscription($subscription))
         {
-            if ($request->getAcceptsJson())
-            {
-                return $this->asJson([
-                    'success' => false,
-                    'errors' => $subscription->getErrors(),
-                ]);
-            }
-
-            Craft::$app->getUrlManager()->setRouteParams([
-                'subscription' => $subscription
-            ]);
-
-            return null;
+            return $this->_handleFailedResponse($subscription);
         }
-
-        if ($request->getAcceptsJson()) {
-            return $this->asJson([
-                'success' => true,
-                'subscription' => [
-                    'id' => $subscription->id,
-                    'userId' => $subscription->userId,
-                    'elementId' => $subscription->elementId,
-                    'list' => $subscription->list,
-                    'siteId' => $subscription->siteId
-                ]
-            ]);
-        }
-
-        return $this->redirectToPostedUrl($subscription);
+        return $this->_handleSuccessfulResponse($subscription);
     }
 
     public function actionRemove()
@@ -90,69 +65,35 @@ class ListController extends Controller
         $this->requireLogin();
         $this->requirePostRequest();
 
-        $request = Craft::$app->getRequest();
-
         $user = $this->_getUser();
         $element = $this->_getElement();
         $list = $this->_getList();
         $site = $this->_getsite();
 
-        // Subscription
-        $subscription = Listit::$plugin->service->getSubscription([
+        // Get Subscription
+        $subscription = Listit::$plugin->subscriptions->getSubscription([
             'userId' => $user->id ?? null,
             'elementId' => $element->id ?? null,
             'list' => $list,
             'siteId' => $site->id ?? null
         ]);
 
-        // Subscription exists?
-        if ($subscription)
+        // No Subscription Found
+        if (!$subscription)
         {
-            if (!Listit::$plugin->service->deleteSubscription($subscription->id))
-            {
-                $result = [
-                    'success' => false,
-                    'error' => 'Could not delete subscription',p
-                ];
-
-                if ($request->getAcceptsJson())
-                {
-                    return $this->asJson($result);
-                }
-
-                Craft::$app->getUrlManager()->setRouteParams([
-                    'subscription' => $result
-                ]);
-
-                return null;
-            }
-
-            if ($request->getAcceptsJson()) {
-                return $this->asJson([
-                    'success' => true,
-                ]);
-            }
-
-            return $this->redirectToPostedUrl();
-        }
-        else
-        {
-            $result = [
-                'success' => true,
-                'message' => 'Subscription does not exist'
-            ];
-
-            if ($request->getAcceptsJson())
-            {
-                return $this->asJson($result);
-            }
-
-            Craft::$app->getUrlManager()->setRouteParams([
-                'subscription' => $result
+            return $this->_handleFailedResponse(false, [
+                'error' => Craft::t('listit', 'Subscription does not exist')
             ]);
-
-            return null;
         }
+
+        // Delete Subscription
+        if (!Listit::$plugin->subscriptions->deleteSubscription($subscription->id))
+        {
+            return $this->_handleFailedResponse($subscription, [
+                'error' => Craft::t('listit', 'Could not delete subscription')
+            ]);
+        }
+        return $this->_handleSuccessfulResponse();
     }
 
 
@@ -161,14 +102,14 @@ class ListController extends Controller
 
     public function actionFollow()
     {
-        $this->_list = Listit::FOLLOW_LIST_HANDLE;
+        $this->_list = Lists::FOLLOW_LIST_HANDLE;
         $this->_requireElementOfType(User::class);
         return $this->actionAdd();
     }
 
     public function actionUnFollow()
     {
-        $this->_list = Listit::FOLLOW_LIST_HANDLE;
+        $this->_list = Lists::FOLLOW_LIST_HANDLE;
         $this->_requireElementOfType(User::class);
         return $this->actionRemove();
     }
@@ -177,15 +118,24 @@ class ListController extends Controller
     // Favourite
     // =========================================================================
 
+    public function actionFavourite()
+    {
+        $this->_list = Lists::FAVOURITE_LIST_HANDLE;
+        return $this->actionAdd();
+    }
+
+    public function actionUnFavourite()
+    {
+        $this->_list = Lists::FAVOURITE_LIST_HANDLE;
+        return $this->actionRemove();
+    }
+
+    // Favorite (US Spelling)
+    // =========================================================================
+
     public function actionFavorite()
     {
         return $this->actionFavourite();
-    }
-
-    public function actionFavourite()
-    {
-        $this->_list = Listit::FAVOURITE_LIST_HANDLE;
-        return $this->actionAdd();
     }
 
     public function actionUnFavorite()
@@ -193,25 +143,18 @@ class ListController extends Controller
         return $this->actionUnFavourite();
     }
 
-    public function actionUnFavourite()
-    {
-        $this->_list = Listit::FAVOURITE_LIST_HANDLE;
-        return $this->actionRemove();
-    }
-
-
     // Like
     // =========================================================================
 
     public function actionLike()
     {
-        $this->_list = Listit::LIKE_LIST_HANDLE;
+        $this->_list = Lists::LIKE_LIST_HANDLE;
         return $this->actionAdd();
     }
 
     public function actionUnLike()
     {
-        $this->_list = Listit::LIKE_LIST_HANDLE;
+        $this->_list = Lists::LIKE_LIST_HANDLE;
         return $this->actionRemove();
     }
 
@@ -220,13 +163,13 @@ class ListController extends Controller
 
     public function actionStar()
     {
-        $this->_list = Listit::STAR_LIST_HANDLE;
+        $this->_list = Lists::STAR_LIST_HANDLE;
         return $this->actionAdd();
     }
 
     public function actionUnStar()
     {
-        $this->_list = Listit::STAR_LIST_HANDLE;
+        $this->_list = Lists::STAR_LIST_HANDLE;
         return $this->actionRemove();
     }
 
@@ -235,18 +178,28 @@ class ListController extends Controller
 
     public function actionBookmark()
     {
-        $this->_list = Listit::BOOKMARK_LIST_HANDLE;
+        $this->_list = Lists::BOOKMARK_LIST_HANDLE;
         return $this->actionAdd();
     }
 
     public function actionUnBookmark()
     {
-        $this->_list = Listit::BOOKMARK_LIST_HANDLE;
+        $this->_list = Lists::BOOKMARK_LIST_HANDLE;
         return $this->actionRemove();
     }
 
     // Private
     // =========================================================================
+
+    private function _getList()
+    {
+        if($this->_list)
+        {
+            return $this->_list;
+        }
+
+        return $list ?? Craft::$app->getRequest()->getParam('list');
+    }
 
     private function _getUser()
     {
@@ -270,17 +223,6 @@ class ListController extends Controller
         return $elementId ? Craft::$app->getElements()->getElementById($elementId) : null;
     }
 
-    private function _getList()
-    {
-        if($this->_list)
-        {
-            return $this->_list;
-        }
-
-        return $list ?? Craft::$app->getRequest()->getParam('list', Listit::DEFAULT_LIST_HANDLE);
-    }
-
-
     private function _getSite()
     {
         if($this->_element)
@@ -299,23 +241,60 @@ class ListController extends Controller
 
         if (!$element->className() === $type)
         {
-            $result = [
-                'success' => false,
-                'error' => 'Element must be of type:  '.$type,
-            ];
-
-            if ($request->getAcceptsJson())
-            {
-                return $this->asJson($result);
-            }
-
-            Craft::$app->getUrlManager()->setRouteParams([
-                'subscription' => $result
+            return $this->_handleFailedResponse($subscription, [
+                'error' => Craft::t('listit', 'Element must be a {type}', [
+                    'type' => $type
+                ])
             ]);
+        }
+    }
 
-            return null;
+    private function _handleSuccessfulResponse($subscription = null, array $result = [])
+    {
+        $result['success'] = true;
+
+        if (Craft::$app->getRequest()->getAcceptsJson())
+        {
+            if($subscription instanceof Subscription)
+            {
+                $result['subscription'] = [
+                    'id' => $subscription->id,
+                    'userId' => $subscription->userId,
+                    'elementId' => $subscription->elementId,
+                    'list' => $subscription->list,
+                    'siteId' => $subscription->siteId
+                ];
+            }
+            return $this->asJson($result);
         }
 
+        $result['subscription'] = $subscription;
+        Craft::$app->getUrlManager()->setRouteParams([
+            'listit' => $result
+        ]);
+
+        return $this->redirectToPostedUrl();
+    }
+
+    private function _handleFailedResponse($subscription = null, array $result = [])
+    {
+        $result['success'] = false;
+
+        if (Craft::$app->getRequest()->getAcceptsJson())
+        {
+            if($subscription instanceof Subscription)
+            {
+                $result['errors'] = $subscription->getErrors();
+            }
+            return $this->asJson($result);
+        }
+
+        $result['subscription'] = $subscription;
+        Craft::$app->getUrlManager()->setRouteParams([
+            'listit' => $result
+        ]);
+
+        return null;
     }
 
 }

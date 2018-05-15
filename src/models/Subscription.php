@@ -8,14 +8,20 @@ use craft\base\Model;
 
 class Subscription extends Model
 {
+    // Private Properties
+    // =========================================================================
+
+    private $_user;
+    private $_element;
+
     // Public Properties
     // =========================================================================
 
     public $id;
     public $userId;
     public $elementId;
+    public $list;
     public $siteId;
-    public $list = Listit::DEFAULT_LIST_HANDLE;
     public $dateCreated;
 
     // Public Methods
@@ -26,8 +32,25 @@ class Subscription extends Model
         return [
             [['userId', 'elementId', 'siteId'], 'integer'],
             [['list'], 'string'],
-            [['list'], 'default', 'value' => Listit::DEFAULT_LIST_HANDLE],
             [['userId', 'elementId', 'siteId', 'list'], 'required'],
         ];
+    }
+
+    public function getUser()
+    {
+        if(is_null($this->_user))
+        {
+            $this->_user = Craft::$app->getUsers()->getUserById($this->userId);
+        }
+        return $this->_user;
+    }
+
+    public function getElement()
+    {
+        if(is_null($this->_element))
+        {
+            $this->_element = Craft::$app->getElements()->getElementById($this->elementId);
+        }
+        return $this->_element;
     }
 }

@@ -1,8 +1,8 @@
 <?php
 namespace fruitstudios\listit;
 
-use fruitstudios\listit\services\ListitService;
-use fruitstudios\listit\variables\ListitVariable;
+use fruitstudios\listit\services\Lists;
+use fruitstudios\listit\services\Subscriptions;
 
 use Craft;
 use craft\base\Plugin;
@@ -21,7 +21,6 @@ class Listit extends Plugin
     // =========================================================================
 
     const DEFAULT_LIST_HANDLE = 'default';
-
     const FOLLOW_LIST_HANDLE = 'follow';
     const STAR_LIST_HANDLE = 'star';
     const BOOKMARK_LIST_HANDLE = 'bookmark';
@@ -48,7 +47,8 @@ class Listit extends Plugin
         self::$plugin = $this;
 
         $this->setComponents([
-            'service' => ListitService::class,
+            'subscriptions' => Subscriptions::class,
+            'lists' => Lists::class,
         ]);
 
         Event::on(
@@ -56,7 +56,7 @@ class Listit extends Plugin
             CraftVariable::EVENT_INIT,
             function (Event $event) {
                 $variable = $event->sender;
-                $variable->set('listit', ListitVariable::class);
+                $variable->set('listit', Lists::class);
             }
         );
 

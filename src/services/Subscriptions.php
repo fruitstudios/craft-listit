@@ -4,6 +4,7 @@ namespace fruitstudios\listit\services;
 use fruitstudios\listit\Listit;
 use fruitstudios\listit\models\Subscription;
 use fruitstudios\listit\records\Subscription as SubscriptionRecord;
+use fruitstudios\listit\events\SubscriptionEvent;
 
 use Craft;
 use craft\base\Component;
@@ -11,10 +12,23 @@ use craft\db\Query;
 
 use yii\db\StaleObjectException;
 
-class ListitService extends Component
+class Subscriptions extends Component
 {
+    // Constants
+    // =========================================================================
+
+    const EVENT_ADDED_TO_LIST = 'addedToList';
+    const EVENT_REMOVED_FROM_LIST = 'removedFromList';
+
     // Public Methods
     // =========================================================================
+
+    public function createSubscription($attributes = [])
+    {
+        $subscription = new Subscription();
+        $subscription->setAttributes($attributes);
+        return $subscription;
+    }
 
     public function getSubscription(array $criteria = null)
     {
@@ -34,11 +48,17 @@ class ListitService extends Component
         }
         else
         {
-            // TODO: Populate Models
-            // https://www.yiiframework.com/doc/guide/2.0/en/db-active-record#active-records-are-called-
-            // https://www.yiiframework.com/doc/guide/2.0/en/input-multiple-models
-            $subscriptionRecord = SubscriptionRecord::find($criteria);
-            return $subscriptionRecords;
+            $subscriptionRecords = SubscriptionRecord::find($criteria);
+
+            $subscriptionModels = [];
+            if($subscriptionModels)
+            {
+                foreach ($subscriptionRecords as $subscriptionRecord)
+                {
+                    $subscriptionModels[] = $this->createSubscriptionFromRecord($subscriptionRecord);
+                }
+            }
+            return $subscriptionModels;
         }
     }
 
@@ -72,8 +92,18 @@ class ListitService extends Component
 
         $subscriptionRecord = new SubscriptionRecord();
         $subscriptionRecord->setAttributes($subscription->getAttributes(), false);
+        if(!$subscriptionRecord->save(false))
+        {
+            return false;
+        }
 
-        return $subscriptionRecord->save(false);
+        $subscriptionModel = $this->_createSubscriptionFromRecord($subscriptionRecord);
+
+        $this->trigger(self::EVENT_ADDED_TO_LIST, new SubscriptionEvent([
+            'subscription' => $subscriptionModel
+        ]));
+
+        return true;
     }
 
     public function deleteSubscription($subscriptionId)
@@ -82,7 +112,14 @@ class ListitService extends Component
 
         if($subscriptionRecord) {
             try {
+
+                $subscriptionModel = $this->_createSubscriptionFromRecord($subscriptionRecord);
                 $subscriptionRecord->delete();
+
+                $this->trigger(self::EVENT_REMOVED_FROM_LIST, new SubscriptionEvent([
+                    'subscription' => $subscriptionModel
+                ]));
+
             } catch (StaleObjectException $e) {
                 Craft::error($e->getMessage(), __METHOD__);
             } catch (\Exception $e) {
