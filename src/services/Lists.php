@@ -34,7 +34,7 @@ class Lists extends Component
     // Public Methods
     // =========================================================================
 
-    public function isOnList($params = [])
+    public function isOnList(array $params)
     {
         $list = $this->_getList($params);
         $element = $this->_getElement($params);
