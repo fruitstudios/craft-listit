@@ -10,6 +10,11 @@ use craft\base\Element;
 use craft\records\Element as ElementRecord;
 use craft\elements\db\ElementQueryInterface;
 use craft\elements\User;
+use craft\elements\Entry;
+use craft\elements\Tag;
+use craft\elements\Asset;
+use craft\elements\Category;
+use craft\elements\MatrixBlock;
 use craft\models\Site;
 use craft\helpers\ArrayHelper;
 use craft\db\Query;
@@ -29,14 +34,14 @@ class Lists extends Component
     // Public Methods
     // =========================================================================
 
-    public function isOnList(string $list, $element, $user = null, $site = null)
+    public function isOnList($params = [])
     {
-        $element = $this->_getElement($element);
+        $list = $this->_getList($params);
+        $element = $this->_getElement($params);
+        $user = $this->_getUser($params);
+        $site = $this->_getSite($params);
 
-        $user = $this->_determineUser($user);
-        $site = $this->_determineSite($site);
-
-        if(!$user || !$element || !$site)
+        if(!$list || !$user || !$element || !$site)
         {
             return false;
         }
@@ -50,12 +55,13 @@ class Lists extends Component
         return Listit::$plugin->subscriptions->getSubscription($criteria);
     }
 
-    public function getSubscriptions(string $list, $user = null, $site = null)
+    public function getSubscriptions($paramsOrList)
     {
-        $user = $this->_determineUser($user);
-        $site = $this->_determineSite($site);
+        $list = $this->_getList($paramsOrList);
+        $user = $this->_getUser($paramsOrList);
+        $site = $this->_getSite($paramsOrList);
 
-        if(!$user || !$site)
+        if(!$list || !$user || !$site)
         {
             return [];
         }
@@ -69,12 +75,13 @@ class Lists extends Component
         return Listit::$plugin->subscriptions->getSubscriptions($criteria);
     }
 
-    public function getUserIds(string $list, $element, $site = null)
+    public function getOwnerIds($params)
     {
-        $element = $this->_getElement($element);
-        $site = $this->_determineSite($site);
+        $list = $this->_getList($params);
+        $element = $this->_getElement($params);
+        $site = $this->_getSite($params);
 
-        if(!$element || !$site)
+        if(!$list || !$element || !$site)
         {
             return [];
         }
@@ -88,21 +95,22 @@ class Lists extends Component
         return Listit::$plugin->subscriptions->getSubscriptionsColumn($criteria, 'userId');
     }
 
-    public function getUsers(string $list, $element, $site = null)
+    public function getOwners($params)
     {
-        $userIds = $this->getUserIds($element, $list, $site);
+        $ownerIds = $this->getOwnerIds($params);
 
         return User::find()
-            ->where(['id' => $userIds])
+            ->id($owenrIds)
             ->all();
     }
 
-    public function getElementIds(string $list, $user = null, $site = null)
+    public function getElementIds($params)
     {
-        $user = $this->_determineUser($user);
-        $site = $this->_determineSite($site);
+        $list = $this->_getList($params);
+        $user = $this->_getUser($params);
+        $site = $this->_getSite($params);
 
-        if(!$user || !$site)
+        if(!$list || !$user || !$site)
         {
             return [];
         }
@@ -116,62 +124,134 @@ class Lists extends Component
         return Listit::$plugin->subscriptions->getSubscriptionsColumn($criteria, 'elementId');
     }
 
-    public function getElements(string $list, $user = null, $site = null)
+    public function getElements($params)
     {
-        // TODO: Is this over kill, is it even needed???
-
-        $elementIds = $this->getElementIds($list, $user, $site);
+        $elementIds = $this->getElementIds($params);
         if(!$elementIds)
         {
             return [];
         }
 
-        $elementsToReturn = $elementIds;
-
-        $elements = (new Query())
-            ->select(['id', 'type'])
-            ->from([ElementRecord::tableName()])
-            ->where([
-                'id' => $elementIds
-            ])
-            ->all();
-
-        $elementIdsByType = [];
-        foreach ($elements as $element)
+        // Get craft element rows
+        $type = $params['type'] ?? false;
+        if($type)
         {
-            $elementIdsByType[$element['type']][] = $element['id'];
-        }
-
-        foreach ($elementIdsByType as $elementType => $ids)
-        {
-            $criteria = ['id' => $ids];
-            $elements = $this->_getElementQuery($elementType, $criteria)
+            $elements = (new Query())
+                ->select(['id', 'type'])
+                ->from([ElementRecord::tableName()])
+                ->where([
+                    'id' => $elementIds,
+                    'type' => $type
+                ])
                 ->all();
 
+            $criteria = $params['criteria'] ?? [];
+            $criteria['id'] = $ids;
+
+            return $this->_getElementQuery($type, $criteria)
+                ->all();
+        }
+        else
+        {
+            // TODO: Is this over kill, is it even needed???
+            $elementsToReturn = $elementIds;
+
+            $elements = (new Query())
+                ->select(['id', 'type'])
+                ->from([ElementRecord::tableName()])
+                ->where([
+                    'id' => $elementIds,
+                ])
+                ->all();
+
+            $elementIdsByType = [];
             foreach ($elements as $element)
             {
-                $key = array_search($element->id, $elementIds);
-                $elementsToReturn[$key] = $element;
+                $elementIdsByType[$element['type']][] = $element['id'];
             }
-        }
 
-        return $elementsToReturn;
+            foreach ($elementIdsByType as $elementType => $ids)
+            {
+                $criteria = ['id' => $ids];
+                $elements = $this->_getElementQuery($elementType, $criteria)
+                    ->all();
+
+                foreach ($elements as $element)
+                {
+                    $key = array_search($element->id, $elementIds);
+                    $elementsToReturn[$key] = $element;
+                }
+            }
+
+            return $elementsToReturn;
+        }
+    }
+
+    public function getEntries($paramsOrList = null)
+    {
+        $params = $this->_convertToParamsArray($paramsOrList, 'list', [
+            'type' => Entry::class
+        ]);
+
+        return $this->getElements($params);
+    }
+
+    public function getUsers($params)
+    {
+        $params = $this->_convertToParamsArray($paramsOrList, 'list', [
+            'type' => User::class
+        ]);
+
+        return $this->getElements($params);
+    }
+
+    public function getTags($params)
+    {
+        $params = $this->_convertToParamsArray($paramsOrList, 'list', [
+            'type' => Tag::class
+        ]);
+
+        return $this->getElements($params);
+    }
+
+    public function getCategories($params)
+    {
+        $params = $this->_convertToParamsArray($paramsOrList, 'list', [
+            'type' => Category::class
+        ]);
+
+        return $this->getElements($params);
+    }
+
+    public function getMatrixBlocks($params)
+    {
+        $params = $this->_convertToParamsArray($paramsOrList, 'list', [
+            'type' => MatrixBlock::class
+        ]);
+
+        return $this->getElements($params);
     }
 
     // Add / Remove
     // =========================================================================
 
-    public function addToList(string $list, $element, $user = null, $site = null)
+    public function addToList($params)
     {
-        $element = $this->_getElement($element);
-        $user = $this->_determineUser($user);
-        $site = $this->_determineSite($site);
+        $list = $this->_getList($params);
+        if(!$list)
+        {
+            return false;
+        }
+
+        $element = $this->_getElement($params);
+        $user = $this->_getUser($params);
+        $site = $this->_getSite($params);
 
         // Create Subscription
         $subscription = Listit::$plugin->subscriptions->createSubscription([
+            'list' => $list,
             'userId' => $user->id ?? null,
             'elementId' => $element->id ?? null,
-            'list' => $list,
             'siteId' => $site->id ?? null,
         ]);
 
@@ -179,18 +259,24 @@ class Lists extends Component
         return Listit::$plugin->subscriptions->saveSubscription($subscription);
     }
 
-    public function removeFromList(string $list, $element, $user = null, $site = null)
+    public function removeFromList($params)
     {
-        $element = $this->_getElement($element);
-        $user = $this->_determineUser($user);
-        $site = $this->_determineSite($site);
+        $list = $this->_getList($params);
+        if(!$list)
+        {
+            return false;
+        }
+
+        $element = $this->_getElement($params);
+        $user = $this->_getUser($params);
+        $site = $this->_getSite($params);
 
         // Subscription
         $subscription = Listit::$plugin->subscriptions->getSubscription([
+            'list' => $list,
             'userId' => $user->id ?? null,
             'elementId' => $element->id ?? null,
-            'list' => $list,
-            'siteId' => $site->id ?? null
+            'siteId' => $site->id ?? null,
         ]);
 
         if (!$subscription)
@@ -198,6 +284,7 @@ class Lists extends Component
             return true;
         }
 
+        // Delete Subscription
         return Listit::$plugin->subscriptions->deleteSubscription($subscription->id);
     }
 
@@ -205,163 +292,206 @@ class Lists extends Component
     // Favourite
     // =========================================================================
 
-    public function favourite($element, $user = null, $site = null)
+    public function favourite($paramsOrElement)
     {
-        return $this->addToList(self::FAVOURITE_LIST_HANDLE, $element, $user, $site);
+        $params = $this->_convertToParamsArray($paramsOrElement, 'element', [
+            'list' => self::FAVOURITE_LIST_HANDLE
+        ]);
+        return $this->addToList($params);
     }
 
-    public function unFavourite($element, $user = null, $site = null)
+    public function unFavourite($paramsOrElement)
     {
-        return $this->removeFromList(self::FAVOURITE_LIST_HANDLE, $element, $user, $site);
+        $params = $this->_convertToParamsArray($paramsOrElement, 'element', [
+            'list' => self::FAVOURITE_LIST_HANDLE
+        ]);
+        return $this->removeFromList($params);
     }
 
-    public function isFavourited($element, $user = null, $site = null)
+    public function isFavourited($paramsOrElement)
     {
-        return $this->isOnList(self::FAVOURITE_LIST_HANDLE, $element, $user, $site);
+        $params = $this->_convertToParamsArray($paramsOrElement, 'element', [
+            'list' => self::FAVOURITE_LIST_HANDLE
+        ]);
+        return $this->isOnList($params);
     }
 
-    public function getFavourites($user = null, $site = null)
+    public function getFavourites($paramsOrUser)
     {
-        $user = $this->_determineUser($user);
-        return $this->getSubscriptions(self::FAVOURITE_LIST_HANDLE, $user, $site);
+        $params = $this->_convertToParamsArray($paramsOrUser, 'user', [
+            'list' => self::FAVOURITE_LIST_HANDLE
+        ]);
+        return $this->getSubscriptions($params);
     }
 
-    public function getFavouritedElements($user = null, $site = null)
+    public function getFavouritedElements($paramsOrUser)
     {
-        $user = $this->_determineUser($user);
-        return $this->getElements(self::FAVOURITE_LIST_HANDLE, $user, $site);
+        $params = $this->_convertToParamsArray($paramsOrUser, 'user', [
+            'list' => self::FAVOURITE_LIST_HANDLE
+        ]);
+        return $this->getElements($params);
     }
 
 
     // Favorite (US Spelling)
     // =========================================================================
 
-    public function favorite($element, $user = null, $site = null)
+    public function favorite($paramsOrElement)
     {
-        return $this->favourite($element, $user, $site);
+        return $this->favourite($paramsOrElement);
     }
 
-    public function unFavorite($element, $user = null, $site = null)
+    public function unFavorite($paramsOrElement)
     {
-        return $this->unFavourite($element, $user, $site);
+        return $this->unFavourite($paramsOrElement);
     }
 
-    public function isFavorited($element, $user = null, $site = null)
+    public function isFavorited($paramsOrElement)
     {
-        return $this->isFavourited($element, $user, $site);
+        return $this->isFavourited($paramsOrElement);
     }
 
-    public function getFavorites($user = null, $site = null)
+    public function getFavorites($paramsOrUser)
     {
-        return $this->getFavourites($user, $site);
+        return $this->getFavourites($paramsOrUser);
     }
 
-    public function getFavoritedElements($user = null, $site = null)
+    public function getFavoritedElements($paramsOrUser)
     {
-        return $this->getFavouritedElements($user, $site);
+        return $this->getFavouritedElements($paramsOrUser);
     }
 
 
     // Like
     // =========================================================================
 
-    public function like($element, $user = null, $site = null)
+    public function like($paramsOrElement)
     {
-        return $this->addToList(self::LIKE_LIST_HANDLE, $element, $user, $site);
+        $params = $this->_convertToParamsArray($paramsOrElement, 'element', [
+            'list' => self::LIKE_LIST_HANDLE
+        ]);
+        return $this->addToList($params);
     }
 
-    public function unLike($element, $user = null, $site = null)
+    public function unLike($paramsOrElement)
     {
-        return $this->removeFromList(self::LIKE_LIST_HANDLE, $element, $user, $site);
+        $params = $this->_convertToParamsArray($paramsOrElement, 'element', [
+            'list' => self::LIKE_LIST_HANDLE
+        ]);
+        return $this->removeFromList($params);
     }
 
-    public function isLiked($element, $user = null, $site = null)
+    public function isLiked($paramsOrElement)
     {
-        return $this->isOnList(self::LIKE_LIST_HANDLE, $element, $user, $site);
+        $params = $this->_convertToParamsArray($paramsOrElement, 'element', [
+            'list' => self::LIKE_LIST_HANDLE
+        ]);
+        return $this->isOnList($params);
     }
 
-    public function getLikes($user = null, $site = null)
+    public function getLikes($paramsOrUser)
     {
-        $user = $this->_determineUser($user);
-        return $this->getSubscriptions(self::LIKE_LIST_HANDLE, $user, $site);
+        $params = $this->_convertToParamsArray($paramsOrUser, 'user', [
+            'list' => self::LIKE_LIST_HANDLE
+        ]);
+        return $this->getSubscriptions($params);
     }
 
-    public function getLikedElements($user = null, $site = null)
+    public function getLikedElements($paramsOrUser)
     {
-        $user = $this->_determineUser($user);
-        return $this->getElements(self::LIKE_LIST_HANDLE, $user, $site);
+        $params = $this->_convertToParamsArray($paramsOrUser, 'user', [
+            'list' => self::LIKE_LIST_HANDLE
+        ]);
+        return $this->getElements($params);
     }
 
 
     // Follow
     // =========================================================================
 
-    public function follow($element, $user = null, $site = null)
+    public function follow($paramsOrElement)
     {
-        return $this->addToList(self::FOLLOW_LIST_HANDLE, $element, $user, $site);
+        $params = $this->_convertToParamsArray($paramsOrElement, 'element', [
+            'list' => self::FOLLOW_LIST_HANDLE
+        ]);
+        return $this->addToList($params);
     }
 
-    public function unFollow($element, $user = null, $site = null)
+    public function unFollow($paramsOrElement)
     {
-        return $this->removeFromList(self::FOLLOW_LIST_HANDLE, $element, $user, $site);
+        $params = $this->_convertToParamsArray($paramsOrElement, 'element', [
+            'list' => self::FOLLOW_LIST_HANDLE
+        ]);
+        return $this->removeFromList($params);
     }
 
-    public function isFollowing($element, $user = null, $site = null)
+    public function isFollowing($paramsOrUser)
     {
-        return $this->isOnList(self::FOLLOW_LIST_HANDLE, $element, $user, $site);
+        $params = $this->_convertToParamsArray($paramsOrUser, 'element', [
+            'list' => self::FOLLOW_LIST_HANDLE
+        ]);
+        return $this->isOnList($params);
     }
 
-    public function isFollower($element, $user = null, $site = null)
+    public function isFollower($paramsOrUser)
     {
-        $user = $this->_determineUser($user);
-        $element = $this->_determineUser($element);
-        return $this->isOnList(self::FOLLOW_LIST_HANDLE, $user, $element, $site);
+        // NOTES : Need to make sure that this handles the reverse stuff here
+        //       : user - needs to be the element supplied
+        //       : element - needs to be the currently logged in user or the user supplied
+
+        $element = $this->_getUser($paramsOrUser['element'] ?? false);
+
+        // Element supplied
+        $params = $this->_convertToParamsArray($paramsOrUser, 'user', [
+            'list' => self::FOLLOW_LIST_HANDLE,
+            'element' => $element
+        ]);
+
+        return $this->isOnList($params);
     }
 
-    public function isFriend($element, $user = null, $site = null)
+    public function isFriend($paramsOrUser)
     {
-        $isFollowing = $this->isFollowing($element, $user, $site);
-        $isFollower = $this->isFollower($element, $user, $site);
-        return $isFollowing && $isFollower;
+        return $this->isFollowing($paramsOrUser) && $this->isFollower($paramsOrUser);
     }
 
-    public function getFollowing($user = null, $site = null)
+    public function getFollowing($paramsOrUser = null)
     {
-        $user = $this->_determineUser($user);
+        $params = $this->_convertToParamsArray($paramsOrUser, 'user', [
+            'list' => self::FOLLOW_LIST_HANDLE
+        ]);
 
-        $elementIds = $this->getElementIds(self::FOLLOW_LIST_HANDLE, $user, $site);
+        $elementIds = $this->getElementIds($params);
 
         return User::find()
-            ->where([
-                'elements.id' => $elementIds
-            ])
+            ->id($elementIds)
             ->all();
     }
 
-    public function getFollowers($element = null, $site = null)
+    public function getFollowers($paramsOrUser = null)
     {
-        $user = $this->_determineUser($element);
+        $params = $this->_convertToParamsArray($paramsOrUser, 'user', [
+            'list' => self::FOLLOW_LIST_HANDLE
+        ]);
 
-        $userIds = $this->getUserIds(self::FOLLOW_LIST_HANDLE, $user, $site);
+        $ownerIds = $this->getOwnerIds($params);
 
         return User::find()
-            ->where([
-                'elements.id' => $userIds
-            ])
+            ->id($ownerIds)
             ->all();
     }
 
-    public function getFriends($user = null, $site = null)
+    public function getFriends($paramsOrUser = null)
     {
-        $user = $this->_determineUser($user);
+        $params = $this->_convertToParamsArray($paramsOrUser, 'user', [
+            'list' => self::FOLLOW_LIST_HANDLE
+        ]);
 
-        $userIds = $this->getUserIds(self::FOLLOW_LIST_HANDLE, $user, $site);
-        $elementIds = $this->getElementIds(self::FOLLOW_LIST_HANDLE, $user, $site);
+        $ownerIds = $this->getOwnerIds($params);
+        $elementIds = $this->getElementIds($params);
 
         return User::find()
-            ->where([
-                'elements.id' => array_intersect($userIds, $elementIds)
-            ])
+            ->id(array_intersect($ownerIds, $elementIds))
             ->all();
     }
 
@@ -369,88 +499,132 @@ class Lists extends Component
     // Star
     // =========================================================================
 
-    public function star($element, $user = null, $site = null)
+    public function star($paramsOrElement)
     {
-        return $this->addToList(self::STAR_LIST_HANDLE, $element, $user, $site);
+        $params = $this->_convertToParamsArray($paramsOrElement, 'element', [
+            'list' => self::STAR_LIST_HANDLE
+        ]);
+
+        return $this->addToList($params);
     }
 
-    public function unStar($element, $user = null, $site = null)
+    public function unStar($paramsOrElement)
     {
-        return $this->removeFromList(self::STAR_LIST_HANDLE, $element, $user, $site);
+        $params = $this->_convertToParamsArray($paramsOrElement, 'element', [
+            'list' => self::STAR_LIST_HANDLE
+        ]);
+
+        return $this->removeFromList($params);
     }
 
-    public function isStared($element, $user = null, $site = null)
+    public function isStared($paramsOrElement)
     {
-        return $this->isOnList(self::STAR_LIST_HANDLE, $element, $user, $site);
+        $params = $this->_convertToParamsArray($paramsOrElement, 'element', [
+            'list' => self::STAR_LIST_HANDLE
+        ]);
+
+        return $this->isOnList($params);
     }
 
-    public function getStarredElements($user = null, $site = null)
+    public function getStarredElements($paramsOrUser = null)
     {
-        $user = $this->_determineUser($user);
-        return $this->getElements(self::STAR_LIST_HANDLE, $user, $site);
+        $params = $this->_convertToParamsArray($paramsOrUser, 'user', [
+            'list' => self::STAR_LIST_HANDLE
+        ]);
+
+        return $this->getElements($params);
     }
 
 
     // Bookmark
     // =========================================================================
 
-    public function bookmark($element, $user = null, $site = null)
+    public function bookmark($paramsOrElement)
     {
-        return $this->addToList(self::BOOKMARK_LIST_HANDLE, $element, $user, $site);
+        $params = $this->_convertToParamsArray($paramsOrElement, 'element', [
+            'list' => self::BOOKMARK_LIST_HANDLE
+        ]);
+
+        return $this->addToList($params);
     }
 
-    public function unBookmark($element, $user = null, $site = null)
+    public function unBookmark($paramsOrElement)
     {
-        return $this->removeFromList(self::BOOKMARK_LIST_HANDLE, $element, $user, $site);
+        $params = $this->_convertToParamsArray($paramsOrElement, 'element', [
+            'list' => self::BOOKMARK_LIST_HANDLE
+        ]);
+
+        return $this->removeFromList($params);
     }
 
-    public function isBookmarked($element, $user = null, $site = null)
+    public function isBookmarked($paramsOrElement)
     {
-        return $this->isOnList(self::BOOKMARK_LIST_HANDLE, $element, $user, $site);
+        $params = $this->_convertToParamsArray($paramsOrElement, 'element', [
+            'list' => self::BOOKMARK_LIST_HANDLE
+        ]);
+
+        return $this->isOnList($params);
     }
 
-    public function getBookmarkedElements($user = null, $site = null)
+    public function getBookmarkedElements($paramsOrUser = null)
     {
-        $user = $this->_determineUser($user);
-        return $this->getElements(self::BOOKMARK_LIST_HANDLE, $user, $site);
+        $params = $this->_convertToParamsArray($paramsOrUser, 'user', [
+            'list' => self::BOOKMARK_LIST_HANDLE
+        ]);
+
+        return $this->getElements($params);
     }
 
     // Private Methods
     // =========================================================================
 
-    private function _determineUser($user = null)
+    private function _convertToParamsArray($value, string $key, array $extend = [])
     {
+        $params = is_array($value) ? $value : [$key => $value];
+        return array_merge($params, $extend);
+    }
+
+    private function _getList($paramsOrList = null)
+    {
+        return is_string($paramsOrList) ? $paramsOrList : ($paramsOrList['list'] ?? false);
+    }
+
+    private function _getUser($params = null)
+    {
+        $user = $params['user'] ?? $params ?? false;
         $user = !$user ? Craft::$app->getUser()->getIdentity() : $user;
         if($user instanceof User)
         {
             return $user;
         }
-        return $user ? Craft::$app->getUsers()->getUserById((int) $user) : false;
+        return $user && !is_array($user) ? Craft::$app->getUsers()->getUserById((int) $user) : false;
     }
 
-    private function _getElement($element = null)
+    private function _getElement($params = null)
     {
+
+        $element = $params['element'] ?? $params ?? false;
         if($element instanceof Element)
         {
             return $element;
         }
-        return $element ? Craft::$app->getElements()->getElementById((int) $element) : false;
+        return $element && !is_array($element) ? Craft::$app->getElements()->getElementById((int) $element) : false;
     }
 
-    private function _determineSite($site = null)
+    private function _getSite($params = null)
     {
+        $site = $params['site'] ?? $params ?? false;
         $site = !$site ? Craft::$app->getSites()->getCurrentSite() : $site;
         if($site instanceof Site)
         {
             return $site;
         }
 
-        return $site ? Craft::$app->getSites()->getSiteById((int) $site) : false;
+        return $site && !is_array($site) ? Craft::$app->getSites()->getSiteById((int) $site) : false;
     }
 
     private function _getElementQuery($elementType, array $criteria): ElementQueryInterface
     {
-        /** @var string|ElementInterface $elementType */
         $query = $elementType::find();
         Craft::configure($query, $criteria);
         return $query;
