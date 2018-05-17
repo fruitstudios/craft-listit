@@ -101,7 +101,7 @@ class Lists extends Component
 
         $query = $this->_getElementQuery(User::class, ($params['criteria'] ?? []));
         return $query
-            ->id($owenrIds)
+            ->id($ownerIds)
             ->all();
     }
 
@@ -185,7 +185,7 @@ class Lists extends Component
         }
     }
 
-    public function getEntries($paramsOrList = null)
+    public function getEntries($paramsOrList)
     {
         $params = $this->_convertToParamsArray($paramsOrList, 'list', [
             'type' => Entry::class
@@ -194,7 +194,7 @@ class Lists extends Component
         return $this->getElements($params);
     }
 
-    public function getUsers($params)
+    public function getUsers($paramsOrList)
     {
         $params = $this->_convertToParamsArray($paramsOrList, 'list', [
             'type' => User::class
@@ -203,7 +203,7 @@ class Lists extends Component
         return $this->getElements($params);
     }
 
-    public function getTags($params)
+    public function getTags($paramsOrList)
     {
         $params = $this->_convertToParamsArray($paramsOrList, 'list', [
             'type' => Tag::class
@@ -212,7 +212,7 @@ class Lists extends Component
         return $this->getElements($params);
     }
 
-    public function getCategories($params)
+    public function getCategories($paramsOrList)
     {
         $params = $this->_convertToParamsArray($paramsOrList, 'list', [
             'type' => Category::class
@@ -221,7 +221,7 @@ class Lists extends Component
         return $this->getElements($params);
     }
 
-    public function getMatrixBlocks($params)
+    public function getMatrixBlocks($paramsOrList)
     {
         $params = $this->_convertToParamsArray($paramsOrList, 'list', [
             'type' => MatrixBlock::class
