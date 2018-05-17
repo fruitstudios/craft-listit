@@ -11,14 +11,14 @@ class Subscription extends Model
     // Private Properties
     // =========================================================================
 
-    private $_user;
+    private $_owner;
     private $_element;
 
     // Public Properties
     // =========================================================================
 
     public $id;
-    public $userId;
+    public $ownerId;
     public $elementId;
     public $list;
     public $siteId;
@@ -32,19 +32,19 @@ class Subscription extends Model
     public function rules()
     {
         return [
-            [['userId', 'elementId', 'siteId'], 'integer'],
+            [['ownerId', 'elementId', 'siteId'], 'integer'],
             [['list'], 'string'],
-            [['userId', 'elementId', 'siteId', 'list'], 'required'],
+            [['ownerId', 'elementId', 'siteId', 'list'], 'required'],
         ];
     }
 
-    public function getUser()
+    public function getOwner()
     {
-        if(is_null($this->_user))
+        if(is_null($this->_owner))
         {
-            $this->_user = Craft::$app->getUsers()->getUserById($this->userId);
+            $this->_owner = Craft::$app->getUsers()->getUserById($this->ownerId);
         }
-        return $this->_user;
+        return $this->_owner;
     }
 
     public function getElement()

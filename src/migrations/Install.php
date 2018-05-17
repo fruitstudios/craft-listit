@@ -69,7 +69,7 @@ class Install extends Migration
                 '{{%listit}}',
                 [
                     'id' => $this->primaryKey(),
-                    'userId' => $this->integer()->notNull(),
+                    'ownerId' => $this->integer()->notNull(),
                     'elementId' => $this->integer()->notNull(),
                     'list' => $this->string(64)->notNull()->defaultValue(''),
                     'siteId' => $this->integer()->notNull(),
@@ -104,9 +104,9 @@ class Install extends Migration
     protected function addForeignKeys()
     {
         $this->addForeignKey(
-            $this->db->getForeignKeyName('{{%listit}}', 'userId'),
+            $this->db->getForeignKeyName('{{%listit}}', 'ownerId'),
             '{{%listit}}',
-            'userId',
+            'ownerId',
             '{{%users}}',
             'id',
             'CASCADE',

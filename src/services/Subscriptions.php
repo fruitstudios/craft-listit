@@ -81,7 +81,7 @@ class Subscriptions extends Component
         }
 
         $subscriptionRecord = SubscriptionRecord::findOne([
-            'userId' => $subscription->userId,
+            'ownerId' => $subscription->ownerId,
             'elementId' => $subscription->elementId,
             'list' => $subscription->list,
             'siteId' => $subscription->siteId
@@ -147,7 +147,7 @@ class Subscriptions extends Component
         {
             $config = $subscriptionRecord->toArray([
                 'id',
-                'userId',
+                'ownerId',
                 'elementId',
                 'siteId',
                 'list',

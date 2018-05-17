@@ -22,7 +22,7 @@ class ListController extends Controller
     // =========================================================================
 
     private $_list;
-    private $_user;
+    private $_owner;
     private $_element;
     private $_site;
 
@@ -39,14 +39,14 @@ class ListController extends Controller
         $this->requireLogin();
         $this->requirePostRequest();
 
-        $user = $this->_getUser();
+        $owner = $this->_getOwner();
         $element = $this->_getElement();
         $list = $this->_getList();
         $site = $this->_getSite();
 
         // Create Subscription
         $subscription = Listit::$plugin->subscriptions->createSubscription([
-            'userId' => $user->id ?? null,
+            'ownerId' => $owner->id ?? null,
             'elementId' => $element->id ?? null,
             'list' => $list,
             'siteId' => $site->id ?? null,
@@ -65,14 +65,14 @@ class ListController extends Controller
         $this->requireLogin();
         $this->requirePostRequest();
 
-        $user = $this->_getUser();
+        $owner = $this->_getOwner();
         $element = $this->_getElement();
         $list = $this->_getList();
         $site = $this->_getSite();
 
         // Get Subscription
         $subscription = Listit::$plugin->subscriptions->getSubscription([
-            'userId' => $user->id ?? null,
+            'ownerId' => $owner->id ?? null,
             'elementId' => $element->id ?? null,
             'list' => $list,
             'siteId' => $site->id ?? null
@@ -201,15 +201,15 @@ class ListController extends Controller
         return $list ?? Craft::$app->getRequest()->getParam('list');
     }
 
-    private function _getUser()
+    private function _getOwner()
     {
-        if($this->_user)
+        if($this->_owner)
         {
-            return $this->_user;
+            return $this->_owner;
         }
 
-        $userId = Craft::$app->getRequest()->getParam('userId', false);
-        return $userId ? Craft::$app->getUsers()->getUserById($userId) : Craft::$app->getUser()->getIdentity();
+        $ownerId = Craft::$app->getRequest()->getParam('ownerId', false);
+        return $ownerId ? Craft::$app->getUsers()->getUserById($ownerId) : Craft::$app->getUser()->getIdentity();
     }
 
     private function _getElement()
@@ -259,7 +259,7 @@ class ListController extends Controller
             {
                 $result['subscription'] = [
                     'id' => $subscription->id,
-                    'userId' => $subscription->userId,
+                    'ownerId' => $subscription->ownerId,
                     'elementId' => $subscription->elementId,
                     'list' => $subscription->list,
                     'siteId' => $subscription->siteId

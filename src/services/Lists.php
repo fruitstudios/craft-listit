@@ -38,17 +38,17 @@ class Lists extends Component
     {
         $list = $this->_getList($params);
         $element = $this->_getElement($params);
-        $user = $this->_getUser($params);
+        $owner = $this->_getOwner($params);
         $site = $this->_getSite($params);
 
-        if(!$list || !$user || !$element || !$site)
+        if(!$list || !$owner || !$element || !$site)
         {
             return false;
         }
 
         $criteria = [
             'list' => $list,
-            'userId' => $user->id,
+            'ownerId' => $owner->id,
             'elementId' => $element->id,
         ];
 
@@ -58,16 +58,16 @@ class Lists extends Component
     public function getSubscriptions($paramsOrList)
     {
         $list = $this->_getList($paramsOrList);
-        $user = $this->_getUser($paramsOrList);
+        $owner = $this->_getOwner($paramsOrList);
         $site = $this->_getSite($paramsOrList);
 
-        if(!$list || !$user || !$site)
+        if(!$list || !$owner || !$site)
         {
             return [];
         }
 
         $criteria = [
-            'userId' => $user->id,
+            'ownerId' => $owner->id,
             'siteId' => $site->id,
             'list' => $list
         ];
@@ -92,14 +92,15 @@ class Lists extends Component
             'list' => $list
         ];
 
-        return Listit::$plugin->subscriptions->getSubscriptionsColumn($criteria, 'userId');
+        return Listit::$plugin->subscriptions->getSubscriptionsColumn($criteria, 'ownerId');
     }
 
     public function getOwners($params)
     {
         $ownerIds = $this->getOwnerIds($params);
 
-        return User::find()
+        $query = $this->_getElementQuery(User::class, ($params['criteria'] ?? []));
+        return $query
             ->id($owenrIds)
             ->all();
     }
@@ -107,16 +108,16 @@ class Lists extends Component
     public function getElementIds($params)
     {
         $list = $this->_getList($params);
-        $user = $this->_getUser($params);
+        $owner = $this->_getOwner($params);
         $site = $this->_getSite($params);
 
-        if(!$list || !$user || !$site)
+        if(!$list || !$owner || !$site)
         {
             return [];
         }
 
         $criteria = [
-            'userId' => $user->id,
+            'ownerId' => $owner->id,
             'list' => $list,
             'siteId' => $site->id,
         ];
@@ -145,10 +146,8 @@ class Lists extends Component
                 ])
                 ->all();
 
-            $criteria = $params['criteria'] ?? [];
-            $criteria['id'] = $ids;
-
-            return $this->_getElementQuery($type, $criteria)
+            return $this->_getElementQuery($type, $params['criteria'] ?? [])
+                ->id($elementIds)
                 ->all();
         }
         else
@@ -173,8 +172,7 @@ class Lists extends Component
             foreach ($elementIdsByType as $elementType => $ids)
             {
                 $criteria = ['id' => $ids];
-                $elements = $this->_getElementQuery($elementType, $criteria)
-                    ->all();
+                $elements = $this->_getElementQuery($elementType, $criteria)->all();
 
                 foreach ($elements as $element)
                 {
@@ -244,13 +242,13 @@ class Lists extends Component
         }
 
         $element = $this->_getElement($params);
-        $user = $this->_getUser($params);
+        $owner = $this->_getOwner($params);
         $site = $this->_getSite($params);
 
         // Create Subscription
         $subscription = Listit::$plugin->subscriptions->createSubscription([
             'list' => $list,
-            'userId' => $user->id ?? null,
+            'ownerId' => $owner->id ?? null,
             'elementId' => $element->id ?? null,
             'siteId' => $site->id ?? null,
         ]);
@@ -268,13 +266,13 @@ class Lists extends Component
         }
 
         $element = $this->_getElement($params);
-        $user = $this->_getUser($params);
+        $owner = $this->_getOwner($params);
         $site = $this->_getSite($params);
 
         // Subscription
         $subscription = Listit::$plugin->subscriptions->getSubscription([
             'list' => $list,
-            'userId' => $user->id ?? null,
+            'ownerId' => $owner->id ?? null,
             'elementId' => $element->id ?? null,
             'siteId' => $site->id ?? null,
         ]);
@@ -316,17 +314,17 @@ class Lists extends Component
         return $this->isOnList($params);
     }
 
-    public function getFavourites($paramsOrUser)
+    public function getFavourites($paramsOrOwner)
     {
-        $params = $this->_convertToParamsArray($paramsOrUser, 'user', [
+        $params = $this->_convertToParamsArray($paramsOrOwner, 'owner', [
             'list' => self::FAVOURITE_LIST_HANDLE
         ]);
         return $this->getSubscriptions($params);
     }
 
-    public function getFavouritedElements($paramsOrUser)
+    public function getFavouritedElements($paramsOrOwner)
     {
-        $params = $this->_convertToParamsArray($paramsOrUser, 'user', [
+        $params = $this->_convertToParamsArray($paramsOrOwner, 'owner', [
             'list' => self::FAVOURITE_LIST_HANDLE
         ]);
         return $this->getElements($params);
@@ -351,14 +349,14 @@ class Lists extends Component
         return $this->isFavourited($paramsOrElement);
     }
 
-    public function getFavorites($paramsOrUser)
+    public function getFavorites($paramsOrOwner)
     {
-        return $this->getFavourites($paramsOrUser);
+        return $this->getFavourites($paramsOrOwner);
     }
 
-    public function getFavoritedElements($paramsOrUser)
+    public function getFavoritedElements($paramsOrOwner)
     {
-        return $this->getFavouritedElements($paramsOrUser);
+        return $this->getFavouritedElements($paramsOrOwner);
     }
 
 
@@ -389,17 +387,17 @@ class Lists extends Component
         return $this->isOnList($params);
     }
 
-    public function getLikes($paramsOrUser)
+    public function getLikes($paramsOrOwner = null)
     {
-        $params = $this->_convertToParamsArray($paramsOrUser, 'user', [
+        $params = $this->_convertToParamsArray($paramsOrOwner, 'owner', [
             'list' => self::LIKE_LIST_HANDLE
         ]);
         return $this->getSubscriptions($params);
     }
 
-    public function getLikedElements($paramsOrUser)
+    public function getLikedElements($paramsOrOwner = null)
     {
-        $params = $this->_convertToParamsArray($paramsOrUser, 'user', [
+        $params = $this->_convertToParamsArray($paramsOrOwner, 'owner', [
             'list' => self::LIKE_LIST_HANDLE
         ]);
         return $this->getElements($params);
@@ -425,24 +423,21 @@ class Lists extends Component
         return $this->removeFromList($params);
     }
 
-    public function isFollowing($paramsOrUser)
+    public function isFollowing($paramsOrUserElement)
     {
-        $params = $this->_convertToParamsArray($paramsOrUser, 'element', [
+        $params = $this->_convertToParamsArray($paramsOrUserElement, 'element', [
             'list' => self::FOLLOW_LIST_HANDLE
         ]);
         return $this->isOnList($params);
     }
 
-    public function isFollower($paramsOrUser)
+    public function isFollower($paramsOrOwner)
     {
-        // NOTES : Need to make sure that this handles the reverse stuff here
-        //       : user - needs to be the element supplied
-        //       : element - needs to be the currently logged in user or the user supplied
-
-        $element = $this->_getUser($paramsOrUser['element'] ?? false);
+        // Use the supplied element, which should be a user element or grab the current user to check against
+        $element = $paramsOrOwner['element'] ?? Craft::$app->getUser()->getIdentity();
 
         // Element supplied
-        $params = $this->_convertToParamsArray($paramsOrUser, 'user', [
+        $params = $this->_convertToParamsArray($paramsOrOwner, 'owner', [
             'list' => self::FOLLOW_LIST_HANDLE,
             'element' => $element
         ]);
@@ -450,47 +445,50 @@ class Lists extends Component
         return $this->isOnList($params);
     }
 
-    public function isFriend($paramsOrUser)
+    public function isFriend($paramsOrUserElement)
     {
-        return $this->isFollowing($paramsOrUser) && $this->isFollower($paramsOrUser);
+        return $this->isFollowing($paramsOrUserElement) && $this->isFollower($paramsOrUserElement);
     }
 
-    public function getFollowing($paramsOrUser = null)
+    public function getFollowing($paramsOrOwner = null)
     {
-        $params = $this->_convertToParamsArray($paramsOrUser, 'user', [
+        $params = $this->_convertToParamsArray($paramsOrOwner, 'owner', [
             'list' => self::FOLLOW_LIST_HANDLE
         ]);
 
         $elementIds = $this->getElementIds($params);
 
-        return User::find()
+        $query = $this->_getElementQuery(User::class, ($paramsOrOwner['criteria'] ?? []));
+        return $query
             ->id($elementIds)
             ->all();
     }
 
-    public function getFollowers($paramsOrUser = null)
+    public function getFollowers($paramsOrOwner = null)
     {
-        $params = $this->_convertToParamsArray($paramsOrUser, 'user', [
+        $params = $this->_convertToParamsArray($paramsOrOwner, 'owner', [
             'list' => self::FOLLOW_LIST_HANDLE
         ]);
 
         $ownerIds = $this->getOwnerIds($params);
 
-        return User::find()
+        $query = $this->_getElementQuery(User::class, ($paramsOrOwner['criteria'] ?? []));
+        return $query
             ->id($ownerIds)
             ->all();
     }
 
-    public function getFriends($paramsOrUser = null)
+    public function getFriends($paramsOrOwner = null)
     {
-        $params = $this->_convertToParamsArray($paramsOrUser, 'user', [
+        $params = $this->_convertToParamsArray($paramsOrOwner, 'owner', [
             'list' => self::FOLLOW_LIST_HANDLE
         ]);
 
         $ownerIds = $this->getOwnerIds($params);
         $elementIds = $this->getElementIds($params);
 
-        return User::find()
+        $query = $this->_getElementQuery(User::class, ($paramsOrOwner['criteria'] ?? []));
+        return $query
             ->id(array_intersect($ownerIds, $elementIds))
             ->all();
     }
@@ -526,9 +524,18 @@ class Lists extends Component
         return $this->isOnList($params);
     }
 
-    public function getStarredElements($paramsOrUser = null)
+    public function getStars($paramsOrOwner = null)
     {
-        $params = $this->_convertToParamsArray($paramsOrUser, 'user', [
+        $params = $this->_convertToParamsArray($paramsOrOwner, 'owner', [
+            'list' => self::STAR_LIST_HANDLE
+        ]);
+
+        return $this->getSubscriptions($params);
+    }
+
+    public function getStarredElements($paramsOrOwner = null)
+    {
+        $params = $this->_convertToParamsArray($paramsOrOwner, 'owner', [
             'list' => self::STAR_LIST_HANDLE
         ]);
 
@@ -566,9 +573,18 @@ class Lists extends Component
         return $this->isOnList($params);
     }
 
-    public function getBookmarkedElements($paramsOrUser = null)
+    public function getBookmarks($paramsOrOwner = null)
     {
-        $params = $this->_convertToParamsArray($paramsOrUser, 'user', [
+        $params = $this->_convertToParamsArray($paramsOrOwner, 'owner', [
+            'list' => self::BOOKMARK_LIST_HANDLE
+        ]);
+
+        return $this->getSubscriptions($params);
+    }
+
+    public function getBookmarkedElements($paramsOrOwner = null)
+    {
+        $params = $this->_convertToParamsArray($paramsOrOwner, 'owner', [
             'list' => self::BOOKMARK_LIST_HANDLE
         ]);
 
@@ -589,38 +605,55 @@ class Lists extends Component
         return is_string($paramsOrList) ? $paramsOrList : ($paramsOrList['list'] ?? false);
     }
 
-    private function _getUser($params = null)
+    private function _getOwner($paramsOrOwner = null)
     {
-        $user = $params['user'] ?? $params ?? false;
-        $user = !$user ? Craft::$app->getUser()->getIdentity() : $user;
-        if($user instanceof User)
+
+        $ownerOrOwnerId = false;
+        if($paramsOrOwner)
         {
-            return $user;
+            $ownerOrOwnerId = is_array($paramsOrOwner) ? ($paramsOrOwner['owner'] ?? false) : $paramsOrOwner;
         }
-        return $user && !is_array($user) ? Craft::$app->getUsers()->getUserById((int) $user) : false;
+
+        $owner = $ownerOrOwnerId ? $ownerOrOwnerId : Craft::$app->getUser()->getIdentity();
+        if($owner instanceof User)
+        {
+            return $owner;
+        }
+
+        return $ownerOrOwnerId ? Craft::$app->getUsers()->getUserById((int) $ownerOrOwnerId) : false;
     }
 
-    private function _getElement($params = null)
+    private function _getElement($paramsOrElement = null)
     {
-
-        $element = $params['element'] ?? $params ?? false;
-        if($element instanceof Element)
+        $elementOrElementId = false;
+        if($paramsOrElement)
         {
-            return $element;
+            $elementOrElementId = is_array($paramsOrElement) ? ($paramsOrElement['element'] ?? false) : $paramsOrElement;
         }
-        return $element && !is_array($element) ? Craft::$app->getElements()->getElementById((int) $element) : false;
+
+        if($elementOrElementId instanceof Element)
+        {
+            return $elementOrElementId;
+        }
+
+        return $elementOrElementId ? Craft::$app->getElements()->getElementById((int) $elementOrElementId) : false;
     }
 
-    private function _getSite($params = null)
+    private function _getSite($paramsOrSite = null)
     {
-        $site = $params['site'] ?? $params ?? false;
-        $site = !$site ? Craft::$app->getSites()->getCurrentSite() : $site;
+        $siteOrSiteId = false;
+        if($paramsOrSite)
+        {
+            $siteOrSiteId = is_array($paramsOrSite) ? ($paramsOrSite['site'] ?? false) : $paramsOrSite;
+        }
+
+        $site = $siteOrSiteId ? $siteOrSiteId : Craft::$app->getSites()->getCurrentSite();
         if($site instanceof Site)
         {
             return $site;
         }
 
-        return $site && !is_array($site) ? Craft::$app->getSites()->getSiteById((int) $site) : false;
+        return $siteOrSiteId ? Craft::$app->getSites()->getSiteById((int) $siteOrSiteId) : false;
     }
 
     private function _getElementQuery($elementType, array $criteria): ElementQueryInterface
