@@ -407,17 +407,17 @@ class Lists extends Component
     // Follow
     // =========================================================================
 
-    public function follow($paramsOrElement)
+    public function follow($paramsOrUserElement)
     {
-        $params = $this->_convertToParamsArray($paramsOrElement, 'element', [
+        $params = $this->_convertToParamsArray($paramsOrUserElement, 'element', [
             'list' => self::FOLLOW_LIST_HANDLE
         ]);
         return $this->addToList($params);
     }
 
-    public function unFollow($paramsOrElement)
+    public function unFollow($paramsOrUserElement)
     {
-        $params = $this->_convertToParamsArray($paramsOrElement, 'element', [
+        $params = $this->_convertToParamsArray($paramsOrUserElement, 'element', [
             'list' => self::FOLLOW_LIST_HANDLE
         ]);
         return $this->removeFromList($params);
@@ -431,13 +431,13 @@ class Lists extends Component
         return $this->isOnList($params);
     }
 
-    public function isFollower($paramsOrOwner)
+    public function isFollower($paramsOrUserElement)
     {
         // Use the supplied element, which should be a user element or grab the current user to check against
-        $element = $paramsOrOwner['element'] ?? Craft::$app->getUser()->getIdentity();
+        $element = $paramsOrUserElement['element'] ?? Craft::$app->getUser()->getIdentity();
 
         // Element supplied
-        $params = $this->_convertToParamsArray($paramsOrOwner, 'owner', [
+        $params = $this->_convertToParamsArray($paramsOrUserElement, 'owner', [
             'list' => self::FOLLOW_LIST_HANDLE,
             'element' => $element
         ]);
@@ -450,58 +450,64 @@ class Lists extends Component
         return $this->isFollowing($paramsOrUserElement) && $this->isFollower($paramsOrUserElement);
     }
 
-    public function getFollowing($paramsOrOwner = null)
+    public function getFollowingIds($paramsOrUserElement = null)
     {
-        $params = $this->_convertToParamsArray($paramsOrOwner, 'owner', [
-            'list' => self::FOLLOW_LIST_HANDLE
+        $user = $this->_getUserOrCurrent($paramsOrUserElement['user'] ?? $paramsOrUserElement);
+        if(!$user)
+        {
+            return [];
+        }
+
+        return $this->getElementIds([
+            'list' => self::FOLLOW_LIST_HANDLE,
+            'owner' => $user,
+            'criteria' => $paramsOrUserElement['criteria'] ?? [],
         ]);
+    }
 
-        $elementIds = $this->getElementIds($params);
+    public function getFollowing($paramsOrUserElement = null)
+    {
+        $elementIds = $this->getFollowingIds($paramsOrUserElement);
 
-        $query = $this->_getElementQuery(User::class, ($paramsOrOwner['criteria'] ?? []));
+        $query = $this->_getElementQuery(User::class, ($paramsOrUserElement['criteria'] ?? []));
         return $query
             ->id($elementIds)
             ->all();
     }
 
-    public function getFollowers($paramsOrOwner = null)
+    public function getFollowerIds($paramsOrUserElement = null)
     {
-        $element = $paramsOrOwner['element'] ?? Craft::$app->getUser()->getIdentity();
+        $user = $this->_getUserOrCurrent($paramsOrUserElement['user'] ?? $paramsOrUserElement);
+        if(!$user)
+        {
+            return [];
+        }
 
-        $params = $this->_convertToParamsArray($paramsOrOwner, 'element', [
+        return $this->getOwnerIds([
             'list' => self::FOLLOW_LIST_HANDLE,
-            'element' => $element
+            'element' => $user,
+            'criteria' => $paramsOrUserElement['criteria'] ?? [],
         ]);
+    }
 
-        $ownerIds = $this->getOwnerIds($params);
+    public function getFollowers($paramsOrUserElement = null)
+    {
+        $ownerIds = $this->getFollowerIds($paramsOrUserElement);
 
-        $query = $this->_getElementQuery(User::class, ($paramsOrOwner['criteria'] ?? []));
+        $query = $this->_getElementQuery(User::class, ($paramsOrUserElement['criteria'] ?? []));
         return $query
             ->id($ownerIds)
             ->all();
     }
 
-    public function getFriends($paramsOrOwner = null)
+    public function getFriends($paramsOrUserElement = null)
     {
-        $element = $paramsOrOwner['element'] ?? Craft::$app->getUser()->getIdentity();
+        $followerIds = $this->getFollowerIds($paramsOrUserElement);
+        $followingIds = $this->getFollowingIds($paramsOrUserElement);
 
-        $params = $this->_convertToParamsArray($paramsOrOwner, 'element', [
-            'list' => self::FOLLOW_LIST_HANDLE,
-            'element' => $element
-        ]);
-
-        $ownerIds = $this->getOwnerIds($params);
-
-
-        $params = $this->_convertToParamsArray($paramsOrOwner, 'owner', [
-            'list' => self::FOLLOW_LIST_HANDLE
-        ]);
-
-        $elementIds = $this->getElementIds($params);
-
-        $query = $this->_getElementQuery(User::class, ($paramsOrOwner['criteria'] ?? []));
+        $query = $this->_getElementQuery(User::class, ($paramsOrUserElement['criteria'] ?? []));
         return $query
-            ->id(array_intersect($ownerIds, $elementIds))
+            ->id(array_intersect($followerIds, $followingIds))
             ->all();
     }
 
@@ -666,6 +672,16 @@ class Lists extends Component
         }
 
         return $siteOrSiteId ? Craft::$app->getSites()->getSiteById((int) $siteOrSiteId) : false;
+    }
+
+    private function _getUserOrCurrent($user = null)
+    {
+        $user = $user ? $user : Craft::$app->getUser()->getIdentity();
+        if($user instanceof User)
+        {
+            return $user;
+        }
+        return $user ? Craft::$app->getUsers()->getUserById((int) $user) : false;
     }
 
     private function _getElementQuery($elementType, array $criteria): ElementQueryInterface
