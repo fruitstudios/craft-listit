@@ -466,8 +466,11 @@ class Lists extends Component
 
     public function getFollowers($paramsOrOwner = null)
     {
-        $params = $this->_convertToParamsArray($paramsOrOwner, 'owner', [
-            'list' => self::FOLLOW_LIST_HANDLE
+        $element = $paramsOrOwner['element'] ?? Craft::$app->getUser()->getIdentity();
+
+        $params = $this->_convertToParamsArray($paramsOrOwner, 'element', [
+            'list' => self::FOLLOW_LIST_HANDLE,
+            'element' => $element
         ]);
 
         $ownerIds = $this->getOwnerIds($params);
@@ -480,11 +483,20 @@ class Lists extends Component
 
     public function getFriends($paramsOrOwner = null)
     {
+        $element = $paramsOrOwner['element'] ?? Craft::$app->getUser()->getIdentity();
+
+        $params = $this->_convertToParamsArray($paramsOrOwner, 'element', [
+            'list' => self::FOLLOW_LIST_HANDLE,
+            'element' => $element
+        ]);
+
+        $ownerIds = $this->getOwnerIds($params);
+
+
         $params = $this->_convertToParamsArray($paramsOrOwner, 'owner', [
             'list' => self::FOLLOW_LIST_HANDLE
         ]);
 
-        $ownerIds = $this->getOwnerIds($params);
         $elementIds = $this->getElementIds($params);
 
         $query = $this->_getElementQuery(User::class, ($paramsOrOwner['criteria'] ?? []));
