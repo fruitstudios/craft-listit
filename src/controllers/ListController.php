@@ -114,6 +114,22 @@ class ListController extends Controller
         return $this->actionRemove();
     }
 
+    // Friend
+    // =========================================================================
+
+    public function actionFriend()
+    {
+        $this->_list = Lists::FRIEND_LIST_HANDLE;
+        $this->_requireElementOfType(User::class);
+        return $this->actionAdd();
+    }
+
+    public function actionUnFriend()
+    {
+        $this->_list = Lists::FRIEND_LIST_HANDLE;
+        $this->_requireElementOfType(User::class);
+        return $this->actionRemove();
+    }
 
     // Favourite
     // =========================================================================

@@ -25,6 +25,7 @@ class Lists extends Component
     // =========================================================================
 
     const FOLLOW_LIST_HANDLE = 'follow';
+    const FRIEND_LIST_HANDLE = 'friend';
     const STAR_LIST_HANDLE = 'star';
     const BOOKMARK_LIST_HANDLE = 'bookmark';
     const LIKE_LIST_HANDLE = 'like';
@@ -434,20 +435,12 @@ class Lists extends Component
     public function isFollower($paramsOrUserElement)
     {
         // Use the supplied element, which should be a user element or grab the current user to check against
-        $element = $paramsOrUserElement['element'] ?? Craft::$app->getUser()->getIdentity();
-
-        // Element supplied
         $params = $this->_convertToParamsArray($paramsOrUserElement, 'owner', [
             'list' => self::FOLLOW_LIST_HANDLE,
-            'element' => $element
+            'element' => $paramsOrUserElement['element'] ?? Craft::$app->getUser()->getIdentity(),
         ]);
 
         return $this->isOnList($params);
-    }
-
-    public function isFriend($paramsOrUserElement)
-    {
-        return $this->isFollowing($paramsOrUserElement) && $this->isFollower($paramsOrUserElement);
     }
 
     public function getFollowingIds($paramsOrUserElement = null)
@@ -500,17 +493,118 @@ class Lists extends Component
             ->all();
     }
 
-    public function getFriends($paramsOrUserElement = null)
+    // Friend
+    // =========================================================================
+
+    public function addFriend($paramsOrUserElement)
     {
-        $followerIds = $this->getFollowerIds($paramsOrUserElement);
-        $followingIds = $this->getFollowingIds($paramsOrUserElement);
+        $params = $this->_convertToParamsArray($paramsOrUserElement, 'element', [
+            'list' => self::FRIEND_LIST_HANDLE
+        ]);
+        return $this->addToList($params);
+    }
+
+    public function removeFriend($paramsOrUserElement)
+    {
+        $params = $this->_convertToParamsArray($paramsOrUserElement, 'element', [
+            'list' => self::FRIEND_LIST_HANDLE
+        ]);
+        return $this->removeFromList($params);
+    }
+
+    public function isOutgoingFriendRequest($paramsOrUserElement)
+    {
+        $params = $this->_convertToParamsArray($paramsOrUserElement, 'element', [
+            'list' => self::FRIEND_LIST_HANDLE
+        ]);
+        return $this->isOnList($params);
+    }
+
+    public function isIncomingFriendRequest($paramsOrUserElement)
+    {
+        // Use the supplied element, which should be a user element or grab the current user to check against
+        $params = $this->_convertToParamsArray($paramsOrUserElement, 'owner', [
+            'list' => self::FRIEND_LIST_HANDLE,
+            'element' => $paramsOrUserElement['element'] ?? Craft::$app->getUser()->getIdentity(),
+        ]);
+
+        return $this->isOnList($params);
+    }
+
+    public function isFriend($paramsOrUserElement)
+    {
+        return $this->isOutgoingFriendRequest($paramsOrUserElement) && $this->isIncomingFriendRequest($paramsOrUserElement);
+    }
+
+
+    public function getOutgoingFriendRequestIds($paramsOrUserElement = null)
+    {
+        $user = $this->_getUserOrCurrent($paramsOrUserElement['user'] ?? $paramsOrUserElement);
+        if(!$user)
+        {
+            return [];
+        }
+
+        return $this->getElementIds([
+            'list' => self::FRIEND_LIST_HANDLE,
+            'owner' => $user,
+            'criteria' => $paramsOrUserElement['criteria'] ?? [],
+        ]);
+    }
+
+    public function getOutgoingFriendRequests($paramsOrUserElement = null)
+    {
+        $elementIds = $this->getOutgoingFriendRequestIds($paramsOrUserElement);
+        $friendIds = $this->getFriendIds($paramsOrUserElement);
 
         $query = $this->_getElementQuery(User::class, ($paramsOrUserElement['criteria'] ?? []));
         return $query
-            ->id(array_intersect($followerIds, $followingIds))
+            ->id(array_diff($elementIds, $friendIds))
             ->all();
     }
 
+    public function getIncomingFriendRequestIds($paramsOrUserElement = null)
+    {
+        $user = $this->_getUserOrCurrent($paramsOrUserElement['user'] ?? $paramsOrUserElement);
+        if(!$user)
+        {
+            return [];
+        }
+
+        return $this->getOwnerIds([
+            'list' => self::FRIEND_LIST_HANDLE,
+            'element' => $user,
+            'criteria' => $paramsOrUserElement['criteria'] ?? [],
+        ]);
+    }
+
+    public function getIncomingFriendRequests($paramsOrUserElement = null)
+    {
+        $ownerIds = $this->getIncomingFriendRequestIds($paramsOrUserElement);
+        $friendIds = $this->getFriendIds($paramsOrUserElement);
+
+        $query = $this->_getElementQuery(User::class, ($paramsOrUserElement['criteria'] ?? []));
+        return $query
+            ->id(array_diff($ownerIds, $friendIds))
+            ->all();
+    }
+
+    public function getFriendIds($paramsOrUserElement = null)
+    {
+        $incomingFriendRequestIds = $this->getIncomingFriendRequestIds($paramsOrUserElement);
+        $outgoingFriendRequestIds = $this->getOutgoingFriendRequestIds($paramsOrUserElement);
+
+        return array_intersect($incomingFriendRequestIds, $outgoingFriendRequestIds);
+    }
+
+    public function getFriends($paramsOrUserElement = null)
+    {
+        $friendIds = $this->getFriendIds($paramsOrUserElement);
+        $query = $this->_getElementQuery(User::class, ($paramsOrUserElement['criteria'] ?? []));
+        return $query
+            ->id($friendIds)
+            ->all();
+    }
 
     // Star
     // =========================================================================
