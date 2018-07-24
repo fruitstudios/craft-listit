@@ -234,7 +234,7 @@ class Lists extends Component
     // Add / Remove
     // =========================================================================
 
-    public function addToList($params)
+    public function addToList($params, $surpressEvents = false)
     {
         $list = $this->_getList($params);
         if(!$list)
@@ -255,10 +255,10 @@ class Lists extends Component
         ]);
 
         // Save Subscription
-        return Listit::$plugin->subscriptions->saveSubscription($subscription);
+        return Listit::$plugin->subscriptions->saveSubscription($subscription, $surpressEvents);
     }
 
-    public function removeFromList($params)
+    public function removeFromList($params, $surpressEvents = false)
     {
         $list = $this->_getList($params);
         if(!$list)
@@ -284,27 +284,27 @@ class Lists extends Component
         }
 
         // Delete Subscription
-        return Listit::$plugin->subscriptions->deleteSubscription($subscription->id);
+        return Listit::$plugin->subscriptions->deleteSubscription($subscription->id, $surpressEvents);
     }
 
 
     // Favourite
     // =========================================================================
 
-    public function favourite($paramsOrElement)
+    public function favourite($paramsOrElement, $surpressEvents = false)
     {
         $params = $this->_convertToParamsArray($paramsOrElement, 'element', [
             'list' => self::FAVOURITE_LIST_HANDLE
         ]);
-        return $this->addToList($params);
+        return $this->addToList($params, $surpressEvents);
     }
 
-    public function unFavourite($paramsOrElement)
+    public function unFavourite($paramsOrElement, $surpressEvents = false)
     {
         $params = $this->_convertToParamsArray($paramsOrElement, 'element', [
             'list' => self::FAVOURITE_LIST_HANDLE
         ]);
-        return $this->removeFromList($params);
+        return $this->removeFromList($params, $surpressEvents);
     }
 
     public function isFavourited($paramsOrElement)
@@ -335,12 +335,12 @@ class Lists extends Component
     // Favorite (US Spelling)
     // =========================================================================
 
-    public function favorite($paramsOrElement)
+    public function favorite($paramsOrElement, $surpressEvents = false)
     {
         return $this->favourite($paramsOrElement);
     }
 
-    public function unFavorite($paramsOrElement)
+    public function unFavorite($paramsOrElement, $surpressEvents = false)
     {
         return $this->unFavourite($paramsOrElement);
     }
@@ -364,20 +364,20 @@ class Lists extends Component
     // Like
     // =========================================================================
 
-    public function like($paramsOrElement)
+    public function like($paramsOrElement, $surpressEvents = false)
     {
         $params = $this->_convertToParamsArray($paramsOrElement, 'element', [
             'list' => self::LIKE_LIST_HANDLE
         ]);
-        return $this->addToList($params);
+        return $this->addToList($params, $surpressEvents);
     }
 
-    public function unLike($paramsOrElement)
+    public function unLike($paramsOrElement, $surpressEvents = false)
     {
         $params = $this->_convertToParamsArray($paramsOrElement, 'element', [
             'list' => self::LIKE_LIST_HANDLE
         ]);
-        return $this->removeFromList($params);
+        return $this->removeFromList($params, $surpressEvents);
     }
 
     public function isLiked($paramsOrElement)
@@ -408,20 +408,20 @@ class Lists extends Component
     // Follow
     // =========================================================================
 
-    public function follow($paramsOrUserElement)
+    public function follow($paramsOrUserElement, $surpressEvents = false)
     {
         $params = $this->_convertToParamsArray($paramsOrUserElement, 'element', [
             'list' => self::FOLLOW_LIST_HANDLE
         ]);
-        return $this->addToList($params);
+        return $this->addToList($params, $surpressEvents);
     }
 
-    public function unFollow($paramsOrUserElement)
+    public function unFollow($paramsOrUserElement, $surpressEvents = false)
     {
         $params = $this->_convertToParamsArray($paramsOrUserElement, 'element', [
             'list' => self::FOLLOW_LIST_HANDLE
         ]);
-        return $this->removeFromList($params);
+        return $this->removeFromList($params, $surpressEvents);
     }
 
     public function isFollowing($paramsOrUserElement)
@@ -496,20 +496,20 @@ class Lists extends Component
     // Friend
     // =========================================================================
 
-    public function addFriend($paramsOrUserElement)
+    public function addFriend($paramsOrUserElement, $surpressEvents = false)
     {
         $params = $this->_convertToParamsArray($paramsOrUserElement, 'element', [
             'list' => self::FRIEND_LIST_HANDLE
         ]);
-        return $this->addToList($params);
+        return $this->addToList($params, $surpressEvents);
     }
 
-    public function removeFriend($paramsOrUserElement)
+    public function removeFriend($paramsOrUserElement, $surpressEvents = false)
     {
         $params = $this->_convertToParamsArray($paramsOrUserElement, 'element', [
             'list' => self::FRIEND_LIST_HANDLE
         ]);
-        return $this->removeFromList($params);
+        return $this->removeFromList($params, $surpressEvents);
     }
 
     public function isOutgoingFriendRequest($paramsOrUserElement)
@@ -609,22 +609,22 @@ class Lists extends Component
     // Star
     // =========================================================================
 
-    public function star($paramsOrElement)
+    public function star($paramsOrElement, $surpressEvents = false)
     {
         $params = $this->_convertToParamsArray($paramsOrElement, 'element', [
             'list' => self::STAR_LIST_HANDLE
         ]);
 
-        return $this->addToList($params);
+        return $this->addToList($params, $surpressEvents);
     }
 
-    public function unStar($paramsOrElement)
+    public function unStar($paramsOrElement, $surpressEvents = false)
     {
         $params = $this->_convertToParamsArray($paramsOrElement, 'element', [
             'list' => self::STAR_LIST_HANDLE
         ]);
 
-        return $this->removeFromList($params);
+        return $this->removeFromList($params, $surpressEvents);
     }
 
     public function isStared($paramsOrElement)
@@ -658,22 +658,22 @@ class Lists extends Component
     // Bookmark
     // =========================================================================
 
-    public function bookmark($paramsOrElement)
+    public function bookmark($paramsOrElement, $surpressEvents = false)
     {
         $params = $this->_convertToParamsArray($paramsOrElement, 'element', [
             'list' => self::BOOKMARK_LIST_HANDLE
         ]);
 
-        return $this->addToList($params);
+        return $this->addToList($params, $surpressEvents);
     }
 
-    public function unBookmark($paramsOrElement)
+    public function unBookmark($paramsOrElement, $surpressEvents = false)
     {
         $params = $this->_convertToParamsArray($paramsOrElement, 'element', [
             'list' => self::BOOKMARK_LIST_HANDLE
         ]);
 
-        return $this->removeFromList($params);
+        return $this->removeFromList($params, $surpressEvents);
     }
 
     public function isBookmarked($paramsOrElement)

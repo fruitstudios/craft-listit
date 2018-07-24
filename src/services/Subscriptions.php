@@ -73,7 +73,7 @@ class Subscriptions extends Component
             ->column();
     }
 
-    public function saveSubscription(Subscription $subscription)
+    public function saveSubscription(Subscription $subscription, $surpressEvents = false)
     {
         if (!$subscription->validate()) {
             Craft::info('Subscription not saved due to validation error.', __METHOD__);
@@ -101,14 +101,17 @@ class Subscriptions extends Component
 
         $subscriptionModel = $this->_createSubscription($subscriptionRecord);
 
-        $this->trigger(self::EVENT_ADDED_TO_LIST, new SubscriptionEvent([
-            'subscription' => $subscriptionModel
-        ]));
+        if (!$surpressErrors)
+        {
+            $this->trigger(self::EVENT_ADDED_TO_LIST, new SubscriptionEvent([
+                'subscription' => $subscriptionModel
+            ]));
+        }
 
         return true;
     }
 
-    public function deleteSubscription($subscriptionId)
+    public function deleteSubscription($subscriptionId, $surpressEvents = false)
     {
         $subscriptionRecord = SubscriptionRecord::findOne($subscriptionId);
 
@@ -118,9 +121,12 @@ class Subscriptions extends Component
                 $subscriptionModel = $this->_createSubscription($subscriptionRecord);
                 $subscriptionRecord->delete();
 
-                $this->trigger(self::EVENT_REMOVED_FROM_LIST, new SubscriptionEvent([
-                    'subscription' => $subscriptionModel
-                ]));
+                if(!$surpressEvents)
+                {
+                     $this->trigger(self::EVENT_REMOVED_FROM_LIST, new SubscriptionEvent([
+                        'subscription' => $subscriptionModel
+                    ]));
+                }
 
             } catch (StaleObjectException $e) {
                 Craft::error($e->getMessage(), __METHOD__);
