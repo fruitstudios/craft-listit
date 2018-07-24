@@ -101,7 +101,7 @@ class Subscriptions extends Component
 
         $subscriptionModel = $this->_createSubscription($subscriptionRecord);
 
-        if (!$surpressErrors)
+        if (!$surpressEvents)
         {
             $this->trigger(self::EVENT_ADDED_TO_LIST, new SubscriptionEvent([
                 'subscription' => $subscriptionModel
